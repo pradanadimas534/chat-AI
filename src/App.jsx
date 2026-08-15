@@ -14,7 +14,6 @@ export default function App() {
     {
       id: makeId(),
       role: "model",
-      text: "Halo! Saya siap membantu. Tulis pesan di bawah untuk mulai chat.",
       greeting: true,
     },
   ]);
