@@ -10,6 +10,14 @@ function makeId() {
 }
 
 export default function App() {
+   const [messages, setMessages] = useState([
+    {
+      id: makeId(),
+      role: "model",
+      text: "Halo! Saya siap membantu. Tulis pesan di bawah untuk mulai chat.",
+      greeting: true,
+    },
+  ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
