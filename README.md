@@ -1,6 +1,6 @@
-# MomoTalk — Shiroko
+﻿# MomoTalk — Shiroko
 
-Frontend React dengan desain terinspirasi MomoChat, khusus satu karakter: Shiroko.
+Frontend React untuk obrolan satu karakter. Shiroko tampil besar dengan sprite ekspresi yang mengikuti balasan chat; tampilan menyesuaikan desktop dan HP.
 
 ## Menjalankan
 
@@ -9,15 +9,30 @@ npm install
 npm run dev
 ```
 
-Build produksi: `npm run build`. Pada PowerShell yang membatasi skrip, gunakan `npm.cmd`.
+PowerShell: gunakan `npm.cmd` jika skrip npm dibatasi. Build: `npm run build`.
+
+## Ekspresi
+
+Buka **Lihat ekspresi** untuk mencoba Tenang, Senang, Marah, Sedih, Malu, dan Kaget tanpa backend. Pilih **Otomatis** untuk kembali ke suasana balasan terakhir. Mengirim pesan juga mengakhiri pratinjau. Saat menunggu respons, karakter menampilkan ekspresi berpikir.
 
 ## API chat
 
-Frontend mengirim `POST /api/chat` dengan `{ message, history }` dan mengharapkan `{ reply }`. Lihat `vite.config.js` untuk proxy backend lokal. Untuk backend terpisah, atur `VITE_API_BASE` sebelum build.
+Frontend tetap mengirim `POST /api/chat` dengan `{ message, history }`. Backend tidak disertakan. Proxy development di `vite.config.js` menuju `http://localhost:5000`; backend terpisah bisa memakai `VITE_API_BASE` sebelum build.
 
-Backend tidak disertakan. Persona balasan Shiroko perlu diatur pada system prompt backend; perubahan ini mengatur desain, profil, dan sapaan awal. Riwayat disimpan selama halaman terbuka dan dapat dibersihkan lewat tombol Chat baru.
+Respons yang disarankan:
 
-## Referensi
+```json
+{ "reply": "Nn. Aku kesal, Sensei.", "emotion": "angry" }
+```
 
-- Referensi tampilan: https://www.momochat.app/
-- Gambar Shiroko: https://schaledb.com/images/student/collection/10010.webp (disimpan di `public/shiroko.webp`). Karakter Blue Archive milik pemegang hak terkait.
+Nilai `emotion`: `neutral`, `happy`, `angry`, `sad`, `shy`, `surprised`, atau `thinking`. Alias bahasa Indonesia juga diterima. Backend sebaiknya memilih emosi Shiroko berdasarkan konteks percakapan dan mengembalikannya bersama balasan. Metadata valid selalu diutamakan.
+
+Respons lama `{ reply }` tetap didukung. Frontend mencoba membaca emosi dari tindakan `*tersenyum*` atau kalimat perasaan karakter. Ini heuristik sederhana, bukan pemahaman konteks AI; teks ambigu kembali ke netral. Riwayat hanya tersimpan selama halaman terbuka. Request gagal mengembalikan draf dan tidak masuk riwayat berikutnya; batas waktu 45 detik.
+
+## Aset
+
+Sprite game diunduh tanpa perubahan dari [Blue Archive Wiki — Shiroko/gallery](https://bluearchive.wiki/wiki/Shiroko/gallery). Referensi pengguna: [Fandom — Sunaookami Shiroko/Gallery](https://bluearchive.fandom.com/wiki/Sunaookami_Shiroko/Gallery). Fandom meminta verifikasi browser sehingga unduhan memakai galeri wiki alternatif.
+
+Lihat `public/expressions/SOURCES.md` untuk asal dan pemetaan tiap sprite. Aset karakter yang dipakai di UI bukan hasil generasi AI. Karakter dan artwork Blue Archive milik pemegang hak terkait.
+
+Avatar lama: https://schaledb.com/images/student/collection/10010.webp (`public/shiroko.webp`).

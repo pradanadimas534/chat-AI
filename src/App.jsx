@@ -1,23 +1,61 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
+import { expressions, resolveEmotion } from "./expressions.js";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "";
-const makeId = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
-const greeting = () => ({ id: makeId(), role: "model", text: "Nn. Sensei, akhirnya datang.\nMau mengobrol sebentar denganku?", greeting: true, time: new Date() });
-const timeLabel = (time) => new Intl.DateTimeFormat("id-ID", { hour: "2-digit", minute: "2-digit" }).format(time);
+const makeId = () =>
+  Math.random().toString(36).slice(2) + Date.now().toString(36);
+const greeting = () => ({
+  id: makeId(),
+  role: "model",
+  text: "Nn. Sensei, akhirnya datang.\nMau mengobrol sebentar denganku?",
+  emotion: "neutral",
+  greeting: true,
+  time: new Date(),
+});
+const timeLabel = (time) =>
+  new Intl.DateTimeFormat("id-ID", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(time);
 
 function Icon({ name }) {
   const paths = {
-    chat: <><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-3 2V11.5A8.5 8.5 0 0 1 9.5 3h3a8.5 8.5 0 0 1 8.5 8.5Z" /><path d="M7 10h8M7 14h5" /></>,
-    user: <><circle cx="12" cy="8" r="4" /><path d="M4 21v-2a8 8 0 0 1 16 0v2" /></>,
-    arrow: <path d="m14 6-6 6 6 6" />,
-    send: <><path d="m22 2-7 20-4-9-9-4 20-7Z" /><path d="m22 2-11 11" /></>,
-    reset: <><path d="M3 10a9 9 0 1 1 2 8M3 4v6h6" /></>,
-    heart: <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z" />,
+    chat: (
+      <>
+        <path d="M20 11a8 8 0 0 1-8 8H5l-3 3V11a9 9 0 0 1 18 0Z" />
+        <path d="M7 9h8M7 13h5" />
+      </>
+    ),
+    send: (
+      <>
+        <path d="m21 3-6 18-4-8-8-4 18-6Z" />
+        <path d="m21 3-10 10" />
+      </>
+    ),
+    reset: (
+      <>
+        <path d="M3 10a9 9 0 1 1 2 8M3 4v6h6" />
+      </>
+    ),
+    sparkle: (
+      <path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5L12 3Z" />
+    ),
   };
-  return <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
-}
-function Avatar({ large = false }) {
-  return <span className={`avatar ${large ? "large" : ""}`}><img src="/shiroko.webp" alt="Shiroko" /></span>;
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {paths[name]}
+    </svg>
+  );
 }
 
 export default function App() {
@@ -25,74 +63,326 @@ export default function App() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [tab, setTab] = useState("messages");
-  const [mobileChat, setMobileChat] = useState(false);
+  const [preview, setPreview] = useState(null);
+  const [assetError, setAssetError] = useState(false);
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
-  useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }); }, [messages, loading]);
+  const requestRef = useRef(null);
+  const lastReply = [...messages].reverse().find((m) => m.role === "model");
+  const emotion = preview || (loading ? "thinking" : lastReply.emotion);
+  const expression = expressions[emotion];
+  useEffect(() => {
+    const reduced = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    scrollRef.current?.scrollTo({
+      top: scrollRef.current.scrollHeight,
+      behavior: reduced ? "instant" : "smooth",
+    });
+  }, [messages, loading, error]);
+  useEffect(() => {
+    Object.values(expressions).forEach(({ file }) => {
+      const img = new Image();
+      img.src = file;
+    });
+    return () => requestRef.current?.abort();
+  }, []);
+  useEffect(() => {
+    setAssetError(false);
+  }, [emotion]);
 
   async function sendMessage(e) {
     e.preventDefault();
     const text = input.trim();
-    if (!text || loading) return;
-    setError(null); setInput("");
-    setMessages((prev) => [...prev, { id: makeId(), role: "user", text, time: new Date() }]);
+    if (!text || requestRef.current) return;
+    const controller = new AbortController();
+    requestRef.current = controller;
+    const timer = setTimeout(() => controller.abort(), 45000);
+    const userId = makeId();
+    setPreview(null);
+    setError(null);
+    setInput("");
     setLoading(true);
+    setMessages((prev) => [
+      ...prev,
+      { id: userId, role: "user", text, time: new Date() },
+    ]);
     try {
-      const history = messages.filter((m) => !m.greeting).map((m) => ({ role: m.role === "model" ? "assistant" : "user", content: m.text }));
+      const history = messages
+        .filter((m) => !m.greeting)
+        .map((m) => ({
+          role: m.role === "model" ? "assistant" : "user",
+          content: m.text,
+        }));
       const res = await fetch(`${API_BASE}/api/chat`, {
-        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: text, history }),
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text, history }),
+        signal: controller.signal,
       });
-      const data = await res.json().catch(() => { throw new Error("Server chat belum tersedia. Coba lagi sebentar, Sensei."); });
-      if (!res.ok) throw new Error(data.error || "Pesan belum berhasil dikirim. Silakan coba lagi.");
-      if (typeof data.reply !== "string" || !data.reply.trim()) throw new Error("Balasan kosong. Silakan coba lagi.");
-      setMessages((prev) => [...prev, { id: makeId(), role: "model", text: data.reply, time: new Date() }]);
+      const data = await res.json().catch(() => {
+        throw new Error("Shiroko belum bisa membalas. Coba lagi sebentar, ya.");
+      });
+      if (!res.ok)
+        throw new Error(
+          typeof data.error === "string"
+            ? data.error
+            : "Pesan belum terkirim. Coba lagi, ya.",
+        );
+      if (typeof data.reply !== "string" || !data.reply.trim())
+        throw new Error("Balasannya kosong. Coba kirim lagi, ya.");
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: makeId(),
+          role: "model",
+          text: data.reply,
+          emotion: resolveEmotion(data),
+          time: new Date(),
+        },
+      ]);
     } catch (err) {
-      setError(err.message); setInput(text);
-      setMessages((prev) => prev.slice(0, -1));
-    } finally { setLoading(false); }
+      setError(
+        err.name === "AbortError"
+          ? "Balasannya terlalu lama. Coba kirim lagi, ya."
+          : err.message,
+      );
+      setInput(text);
+      setMessages((prev) => prev.filter((m) => m.id !== userId));
+    } finally {
+      clearTimeout(timer);
+      requestRef.current = null;
+      setLoading(false);
+      requestAnimationFrame(() => inputRef.current?.focus());
+    }
   }
   function resetChat() {
-    if (loading) return;
-    setMessages([greeting()]); setError(null); setInput(""); inputRef.current?.focus();
+    if (requestRef.current) return;
+    setMessages([greeting()]);
+    setError(null);
+    setInput("");
+    setPreview(null);
+    inputRef.current?.focus();
   }
 
-  return <div className="app-shell">
-    <header className="masthead">
-      <a className="brand" href="./" aria-label="MomoTalk beranda"><span className="brand-icon"><Icon name="chat" /></span><span>Momo<span className="brand-light">Talk</span><small>Just you & Shiroko.</small></span></a>
-      <div className="sensei-badge"><span className="sensei-avatar">S</span><div>Sensei<small>Selamat datang kembali</small></div><span className="sparkle">✦</span></div>
-    </header>
-    <main className={`talk-window ${mobileChat ? "show-chat" : ""}`}>
-      <nav className="rail" aria-label="Navigasi utama">
-        <span className="rail-logo"><Icon name="chat" /></span>
-        <button className={`rail-button ${tab === "students" ? "active" : ""}`} onClick={() => { setTab("students"); setMobileChat(false); }} aria-pressed={tab === "students"}><Icon name="user" /><span>Students</span></button>
-        <button className={`rail-button ${tab === "messages" ? "active" : ""}`} onClick={() => { setTab("messages"); setMobileChat(false); }} aria-pressed={tab === "messages"}><Icon name="chat" /><span>Messages</span></button>
-        <span className="rail-bottom">モモ<br />トーク</span>
-      </nav>
-      <aside className="student-panel">
-        <div className="list-heading"><h1>{tab === "students" ? "Students" : "Messages"}<span>1</span></h1><p>{tab === "students" ? "Teman dari Akademi Abydos" : "Cerita kecil, setiap hari."}</p></div>
-        <div className="list-label">{tab === "students" ? "SEMUA STUDENT" : "PERCAKAPAN"}</div>
-        <button className="student-card" onClick={() => setMobileChat(true)} aria-label="Buka percakapan dengan Shiroko"><Avatar /><span className="student-copy"><span className="student-name">Shiroko <span className="pink-dot" /></span><span className="preview">{tab === "students" ? "Sunaookami Shiroko" : messages[messages.length - 1].text}</span><span className="school">ABYDOS</span></span></button>
-        <div className="sidebar-note"><Icon name="heart" /><p>Satu teman.<br /><strong>Banyak cerita.</strong></p><span>Ruang kecil untukmu dan Shiroko.</span></div>
-        <div className="sidebar-footer"><span className="status-dot" /> Hanya Shiroko, selalu.</div>
-      </aside>
-      <section className="conversation" aria-label="Percakapan Shiroko">
-        <header className="chat-header"><button className="back-button" onClick={() => setMobileChat(false)} aria-label="Kembali ke daftar"><Icon name="arrow" /></button><Avatar /><div className="chat-title"><h2>Shiroko <span>シロコ</span></h2><p>SMA Abydos <span>·</span> Foreclosure Task Force</p></div><button className="reset-button" onClick={resetChat} disabled={loading} aria-label="Mulai chat baru"><Icon name="reset" /><span>Chat baru</span></button></header>
-        <div className="chat-area" ref={scrollRef}>
-          <div className="profile-intro"><div className="halo" /><Avatar large /><h3>Sunaookami Shiroko</h3><p>砂狼シロコ <span>·</span> Abydos</p><span className="profile-tag">“Nn. Aku di sini, Sensei.”</span></div>
-          <div className="day-divider"><span />Hari ini<span /></div>
-          <div className="message-list" role="log" aria-live="polite" aria-label="Pesan">
-            {messages.map((m) => <div key={m.id} className={`bubble-row ${m.role}`}>
-              {m.role === "model" && <Avatar />}
-              <div className="message-content">{m.role === "model" && <span className="message-author">Shiroko</span>}<div className={`bubble ${m.role}`}>{m.text}</div><time className="message-time">{timeLabel(m.time)}</time></div>
-            </div>)}
-            {loading && <div className="bubble-row model"><Avatar /><div className="message-content"><span className="message-author">Shiroko sedang mengetik...</span><div className="bubble model typing" aria-label="Menunggu balasan"><span /><span /><span /></div></div></div>}
-          </div>
-          {error && <div className="error-banner" role="alert">{error}</div>}
+  return (
+    <div className="app-shell">
+      <header className="masthead">
+        <a className="brand" href="./" aria-label="MomoTalk beranda">
+          <span className="brand-icon">
+            <Icon name="chat" />
+          </span>
+          Momo<span>Talk</span>
+          <span className="edition">SHIROKO</span>
+        </a>
+        <div className="sensei-badge">
+          <span className="sensei-avatar">S</span>
+          <span>
+            Halo, Sensei<small>Senang kamu di sini.</small>
+          </span>
         </div>
-        <div className="composer-wrap"><form className="composer" onSubmit={sendMessage}><input ref={inputRef} aria-label="Pesan untuk Shiroko" value={input} onChange={(e) => setInput(e.target.value)} placeholder="Tulis pesan untuk Shiroko..." disabled={loading} /><button type="submit" disabled={loading || !input.trim()} aria-label="Kirim pesan"><Icon name="send" /></button></form><div className="composer-caption"><span>Obrolan kecil bisa jadi hal yang berarti.</span><span>Enter untuk kirim ↵</span></div></div>
-      </section>
-    </main>
-    <footer className="page-footer"><span>MOMO<span className="footer-heart">♡</span>TALK</span> A little closer, one message at a time.<span>SHIROKO EDITION</span></footer>
-  </div>;
+      </header>
+      <main className="talk-window">
+        <section
+          className={`character-stage emotion-${emotion}`}
+          aria-label="Karakter Shiroko"
+        >
+          <div className="scene-grid" aria-hidden="true" />
+          <div className="scene-heading">
+            <span className="eyebrow">A LITTLE CLOSER, EVERY DAY</span>
+            <h1>
+              Di sini,
+              <br />
+              bersamamu.
+            </h1>
+            <p>Satu teman. Banyak cerita.</p>
+          </div>
+          <span className="scene-japanese" aria-hidden="true">
+            シロコ
+          </span>
+          <div className="portrait-wrap">
+            <img
+              key={expression.file}
+              className={`character-portrait ${assetError ? "fallback" : ""}`}
+              src={assetError ? "/shiroko.webp" : expression.file}
+              alt={`Shiroko — ${expression.label.toLowerCase()}`}
+              onError={() => setAssetError(true)}
+            />
+          </div>
+          <div className="mood-pill" role="status">
+            <span className="mood-dot" />
+            {preview ? "Pratinjau: " : ""}
+            {loading && !preview ? "Sedang berpikir…" : expression.label}
+          </div>
+          <div className="character-card">
+            <div>
+              <span className="eyebrow">ABYDOS HIGH SCHOOL</span>
+              <h2>
+                Sunaookami Shiroko <span>砂狼シロコ</span>
+              </h2>
+            </div>
+            <span className="character-mark" aria-hidden="true">
+              <Icon name="sparkle" />
+            </span>
+            <p>“Nn. Aku di sini, Sensei.”</p>
+          </div>
+          <details className="expression-preview">
+            <summary>
+              Lihat ekspresi <span>＋</span>
+            </summary>
+            <div className="expression-options">
+              <button onClick={() => setPreview(null)} aria-pressed={!preview}>
+                Otomatis
+              </button>
+              {Object.entries(expressions)
+                .filter(([key]) => key !== "thinking")
+                .map(([key, value]) => (
+                  <button
+                    key={key}
+                    onClick={() => setPreview(key)}
+                    aria-pressed={preview === key}
+                  >
+                    {value.label}
+                  </button>
+                ))}
+            </div>
+          </details>
+        </section>
+        <section className="conversation" aria-label="Percakapan Shiroko">
+          <header className="chat-header">
+            <span className="avatar">
+              <img src="/shiroko.webp" alt="" />
+            </span>
+            <div className="chat-title">
+              <h2>
+                Shiroko <span>シロコ</span>
+              </h2>
+              <p>
+                <span className="status-dot" />
+                {loading ? "Sedang menulis balasan…" : "Teman ngobrolmu"}
+              </p>
+            </div>
+            <button
+              className="reset-button"
+              onClick={resetChat}
+              disabled={loading}
+              aria-label="Mulai chat baru"
+            >
+              <Icon name="reset" />
+              <span>Chat baru</span>
+            </button>
+          </header>
+          <div className="chat-area" ref={scrollRef}>
+            <div className="day-divider">
+              <span />
+              Hari ini
+              <span />
+            </div>
+            <div className="conversation-intro">
+              <Icon name="sparkle" />
+              <p>Cerita apa hari ini, Sensei?</p>
+              <span>Hal kecil juga boleh diceritakan.</span>
+            </div>
+            <div
+              className="message-list"
+              role="log"
+              aria-live="polite"
+              aria-label="Pesan"
+            >
+              {messages.map((m) => (
+                <div key={m.id} className={`bubble-row ${m.role}`}>
+                  <div className="message-content">
+                    <span className="message-author">
+                      {m.role === "model" ? "Shiroko" : "Kamu"}
+                    </span>
+                    <div className={`bubble ${m.role}`}>{m.text}</div>
+                    <div className="message-meta">
+                      <time dateTime={m.time.toISOString()}>
+                        {timeLabel(m.time)}
+                      </time>
+                      {m.role === "model" && (
+                        <span>{expressions[m.emotion].label}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {loading && (
+                <div className="bubble-row model">
+                  <div className="message-content">
+                    <span className="message-author">Shiroko</span>
+                    <div
+                      className="bubble model typing"
+                      aria-label="Menunggu balasan"
+                    >
+                      <span />
+                      <span />
+                      <span />
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            {error && (
+              <div className="error-banner" role="alert">
+                {error}
+                <small>Pesanmu sudah dikembalikan ke kolom chat.</small>
+              </div>
+            )}
+          </div>
+          <div className="composer-wrap">
+            {messages.length === 1 && !loading && (
+              <div className="suggestions" aria-label="Ide obrolan">
+                {["Gimana harimu, Shiroko?", "Temani aku sebentar, ya."].map(
+                  (text) => (
+                    <button
+                      key={text}
+                      onClick={() => {
+                        setInput(text);
+                        inputRef.current?.focus();
+                      }}
+                    >
+                      {text}
+                      <span>↗</span>
+                    </button>
+                  ),
+                )}
+              </div>
+            )}
+            <form className="composer" onSubmit={sendMessage}>
+              <input
+                ref={inputRef}
+                aria-label="Pesan untuk Shiroko"
+                placeholder="Tulis sesuatu untuk Shiroko…"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                disabled={loading}
+                maxLength={6000}
+                autoComplete="off"
+              />
+              <button
+                type="submit"
+                disabled={loading || !input.trim()}
+                aria-label="Kirim pesan"
+              >
+                <Icon name="send" />
+              </button>
+            </form>
+            <div className="composer-caption">
+              <span>Ruang kecil untukmu dan Shiroko.</span>
+              <span>Enter untuk kirim ↵</span>
+            </div>
+          </div>
+        </section>
+      </main>
+      <footer className="page-footer">
+        <span>
+          MOMOTALK <span> / </span> SHIROKO EDITION
+        </span>
+        <span>
+          Just you & Shiroko. <span>✧</span>
+        </span>
+      </footer>
+    </div>
+  );
 }
