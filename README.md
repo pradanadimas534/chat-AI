@@ -42,3 +42,11 @@ Sprite game diunduh tanpa perubahan dari [Blue Archive Wiki — Shiroko/gallery]
 Lihat `public/expressions/SOURCES.md` untuk pemetaan lengkap dan URL setiap gambar. Aset karakter yang dipakai di UI bukan hasil generasi AI. Karakter dan artwork Blue Archive milik pemegang hak terkait.
 
 Avatar lama: https://schaledb.com/images/student/collection/10010.webp (`public/shiroko.webp`).
+
+## Kepribadian Shiroko
+
+`src/persona.js` memberi arahan karakter berdasarkan bagian Profile/Personality dari referensi Fandom di atas: tenang dan lembut, peduli teman/Abydos, antusias olahraga, dengan humor datar dan reaksi cemberut yang sesuai konteks. Pilihan bahasa Indonesia, panjang jawaban, serta penanda tindakan merupakan adaptasi untuk aplikasi ini.
+
+Frontend menyertakan arahan ini di dalam field `message` setiap request, diikuti pesan asli dalam format string JSON. Tampilan pesan, draf, dan riwayat frontend tetap memakai teks asli Sensei. Tidak ada field API atau role baru, dan repo backend tidak diakses. Penanda tindakan seperti `*tersenyum*` dapat memicu ekspresi yang sudah ada.
+
+Ini arahan pada tingkat pesan pengguna, bukan perubahan system prompt backend. Efektivitasnya bergantung pada instruksi, pembatasan panjang, dan pemrosesan pesan di backend. Payload sedikit lebih panjang pada setiap request. Tes lokal memverifikasi pengiriman arahan dan integritas riwayat menggunakan respons tiruan; kesetiaan kepribadian dari model live belum diverifikasi.

@@ -1,5 +1,6 @@
 ﻿import { useEffect, useRef, useState } from "react";
 import { expressions, resolveEmotion } from "./expressions.js";
+import { buildChatRequest } from "./persona.js";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 const makeId = () =>
@@ -117,7 +118,7 @@ export default function App() {
       const res = await fetch(`${API_BASE}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text, history }),
+        body: JSON.stringify(buildChatRequest(text, history)),
         signal: controller.signal,
       });
       const data = await res.json().catch(() => {
