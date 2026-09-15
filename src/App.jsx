@@ -137,7 +137,7 @@ export default function App() {
           id: makeId(),
           role: "model",
           text: data.reply,
-          emotion: resolveEmotion(data),
+          emotion: resolveEmotion(data, lastReply.emotion),
           time: new Date(),
         },
       ]);

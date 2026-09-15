@@ -312,6 +312,9 @@ button:hover:not(:disabled) {
   font-size: 14px;
 }
 .expression-options {
+  max-height: min(360px, calc(100dvh - 260px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
   position: absolute;
   bottom: 39px;
   left: 0;
@@ -781,6 +784,7 @@ button:hover:not(:disabled) {
     width: 115px;
   }
   .expression-options {
+    max-height: max(130px, calc(38dvh - 72px));
     width: 270px;
     right: auto;
     bottom: 34px;
