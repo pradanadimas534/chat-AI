@@ -286,7 +286,10 @@ export default function App() {
     <main className={`novel-scene emotion-${emotion}`}>
       <div className="room-background" aria-hidden="true" />
       <div className="scene-shade" aria-hidden="true" />
-      <div className="character-layer">
+      <div
+        key={lastReply.id}
+        className={`character-layer ${lastReply.greeting ? "" : "reply-bounce"}`}
+      >
         <img
           key={expression.file}
           className={`character-portrait ${assetError ? "fallback" : ""}`}

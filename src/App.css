@@ -610,6 +610,24 @@ button:active:not(:disabled) {
   white-space: nowrap;
   border: 0;
 }
+.character-layer.reply-bounce {
+  animation: reply-bounce 560ms ease-out both;
+}
+@keyframes reply-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-22px);
+  }
+  58% {
+    transform: translateY(0);
+  }
+  78% {
+    transform: translateY(-7px);
+  }
+}
 @keyframes arrive {
   from {
     opacity: 0.5;
