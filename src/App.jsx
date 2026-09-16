@@ -93,7 +93,7 @@ function Modal({ title, kind, onClose, children }) {
   );
 }
 
-function Dialogue({ message, onReply, animated }) {
+function Dialogue({ message, onReply, animated, paused }) {
   const pages = paginateDialogue(message.text, 80);
   const [page, setPage] = useState(0);
   const [visible, setVisible] = useState(0);
@@ -112,6 +112,25 @@ function Dialogue({ message, onReply, animated }) {
     );
     return () => clearInterval(timer);
   }, [page, content.text, animated]);
+  useEffect(() => {
+    if (!complete || paused || page >= pages.length - 1) return;
+    let timer;
+    const schedule = () => {
+      clearTimeout(timer);
+      if (document.hidden) return;
+      // Allow reading time after typing finishes; longer pages stay longer.
+      timer = setTimeout(() => {
+        setVisible(0);
+        setPage((current) => current + 1);
+      }, Math.max(2500, content.text.split(/\s+/).length * 300));
+    };
+    schedule();
+    document.addEventListener("visibilitychange", schedule);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("visibilitychange", schedule);
+    };
+  }, [complete, paused, page, pages.length, content.text]);
   function advance() {
     if (!complete) setVisible(content.text.length);
     else if (page < pages.length - 1) {
@@ -147,7 +166,7 @@ function Dialogue({ message, onReply, animated }) {
             {!complete
               ? "Ketuk untuk tampilkan semua"
               : page < pages.length - 1
-                ? "Lanjut"
+                ? "Lanjut otomatis"
                 : "Balas"}
             <Icon name="next" />
           </span>
@@ -321,6 +340,7 @@ export default function App() {
             message={lastReply}
             onReply={() => setPanel("compose")}
             animated={animated}
+            paused={panel !== null}
           />
         ) : null}
         <nav className="scene-controls" aria-label="Kontrol obrolan">
