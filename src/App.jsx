@@ -6,14 +6,6 @@ import { paginateDialogue } from "./dialogue.js";
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 const makeId = () =>
   Math.random().toString(36).slice(2) + Date.now().toString(36);
-const greeting = () => ({
-  id: makeId(),
-  role: "model",
-  text: "Nn. Sensei, akhirnya datang.\nMau mengobrol sebentar denganku?",
-  emotion: "neutral",
-  greeting: true,
-  time: new Date(),
-});
 const timeLabel = (time) =>
   new Intl.DateTimeFormat("id-ID", {
     hour: "2-digit",
@@ -168,7 +160,7 @@ function Dialogue({ message, onReply, animated }) {
 }
 
 export default function App() {
-  const [messages, setMessages] = useState(() => [greeting()]);
+  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -271,7 +263,7 @@ export default function App() {
   }
   function resetChat() {
     if (requestRef.current) return;
-    setMessages([greeting()]);
+    setMessages([]);
     setError(null);
     setInput("");
     setPanel(null);
@@ -282,8 +274,8 @@ export default function App() {
       <div className="room-background" aria-hidden="true" />
       <div className="scene-shade" aria-hidden="true" />
       <div
-        key={lastReply.id}
-        className={`character-layer ${lastReply.greeting ? "" : "reply-bounce"}`}
+        key={lastReply?.id || "idle"}
+        className={`character-layer ${lastReply ? "reply-bounce" : ""}`}
       >
         <img
           key={expression.file}
@@ -310,14 +302,14 @@ export default function App() {
               </p>
             </div>
           </section>
-        ) : (
+        ) : lastReply ? (
           <Dialogue
             key={lastReply.id}
             message={lastReply}
             onReply={() => setPanel("compose")}
             animated={animated}
           />
-        )}
+        ) : null}
         <nav className="scene-controls" aria-label="Kontrol obrolan">
           <button onClick={() => setPanel("history")}>
             <Icon name="history" />
