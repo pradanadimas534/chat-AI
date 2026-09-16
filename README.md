@@ -50,3 +50,16 @@ Avatar lama: https://schaledb.com/images/student/collection/10010.webp (`public/
 Frontend menyertakan arahan ini di dalam field `message` setiap request, diikuti pesan asli dalam format string JSON. Tampilan pesan, draf, dan riwayat frontend tetap memakai teks asli Sensei. Tidak ada field API atau role baru, dan repo backend tidak diakses. Penanda tindakan seperti `*tersenyum*` dapat memicu ekspresi yang sudah ada.
 
 Ini arahan pada tingkat pesan pengguna, bukan perubahan system prompt backend. Efektivitasnya bergantung pada instruksi, pembatasan panjang, dan pemrosesan pesan di backend. Payload sedikit lebih panjang pada setiap request. Tes lokal memverifikasi pengiriman arahan dan integritas riwayat menggunakan respons tiruan; kesetiaan kepribadian dari model live belum diverifikasi.
+
+## Tampilan visual novel
+
+Desain mengikuti interaksi pada video referensi pengguna: scene memenuhi layar, Shiroko di depan latar ruangan, nama pembicara dan dialog transparan di bawah. Latar saat ini adalah ruang klub Abydos versi malam; sumber ada di `public/backgrounds/SOURCES.md`. Video pengguna tidak disertakan dalam repo/deployment.
+
+- Ketuk **Balas** untuk membuka kolom ketik. Draf dipertahankan saat ditutup atau saat request gagal.
+- Balasan muncul bertahap; ketuk dialog untuk menampilkan semua teks. Narasi dalam `*...*` ditampilkan miring pada halaman tersendiri, lalu **Lanjut** membuka ucapan berikutnya. Balasan panjang dibagi menjadi beberapa halaman tanpa memotong isinya.
+- **Riwayat** menampilkan seluruh pesan asli. Menu kanan atas berisi pengaturan teks bertahap, **Lihat ekspresi** (18 aset), dan **Mulai chat baru**.
+- Reset meminta konfirmasi karena menghapus riwayat sesi. Semua riwayat tetap hanya di memori selama halaman terbuka.
+- Reduced motion menonaktifkan teks bertahap secara default. Dialog mendukung Escape, fokus keyboard, dan tampilan responsif; ukuran kolom balas mengikuti Visual Viewport.
+- Karakter masih berupa sprite dengan transisi ekspresi, bukan model Live2D atau animasi gerak bibir.
+
+Format API, arahan kepribadian frontend, dan pemetaan 18 ekspresi dipertahankan. Pengujian UI menggunakan balasan API tiruan; tidak bergantung pada migrasi Gemini backend yang masih berada di branch terpisah.
