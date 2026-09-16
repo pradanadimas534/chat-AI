@@ -97,8 +97,19 @@ function Dialogue({ message, onReply, animated, paused }) {
   const pages = paginateDialogue(message.text, 80);
   const [page, setPage] = useState(0);
   const [visible, setVisible] = useState(0);
+  const textRef = useRef(null);
+  const [atBottom, setAtBottom] = useState(true);
+  const checkScroll = () => {
+    const el = textRef.current;
+    if (el) setAtBottom(el.scrollHeight - el.clientHeight - el.scrollTop < 4);
+  };
   const content = pages[page];
   const complete = !animated || visible >= content.text.length;
+  useLayoutEffect(() => {
+    textRef.current.scrollTop = 0;
+    checkScroll();
+  }, [page]);
+  useLayoutEffect(checkScroll, [visible, animated, content.text]);
   useEffect(() => {
     setVisible(0);
     if (!animated) return;
@@ -113,7 +124,7 @@ function Dialogue({ message, onReply, animated, paused }) {
     return () => clearInterval(timer);
   }, [page, content.text, animated]);
   useEffect(() => {
-    if (!complete || paused || page >= pages.length - 1) return;
+    if (!complete || !atBottom || paused || page >= pages.length - 1) return;
     let timer;
     const schedule = () => {
       clearTimeout(timer);
@@ -130,7 +141,7 @@ function Dialogue({ message, onReply, animated, paused }) {
       clearTimeout(timer);
       document.removeEventListener("visibilitychange", schedule);
     };
-  }, [complete, paused, page, pages.length, content.text]);
+  }, [complete, atBottom, paused, page, pages.length, content.text]);
   function advance() {
     if (!complete) setVisible(content.text.length);
     else if (page < pages.length - 1) {
@@ -153,7 +164,7 @@ function Dialogue({ message, onReply, animated, paused }) {
         onClick={advance}
         aria-label={action}
       >
-        <span className="dialogue-text" aria-hidden="true">
+        <span ref={textRef} onScroll={checkScroll} className="dialogue-text" aria-hidden="true">
           {complete ? content.text : content.text.slice(0, visible)}
           <span className="text-cursor">{!complete ? "▎" : ""}</span>
         </span>
@@ -165,6 +176,8 @@ function Dialogue({ message, onReply, animated, paused }) {
           <span>
             {!complete
               ? "Ketuk untuk tampilkan semua"
+              : !atBottom
+                ? "Gulir untuk baca lanjutannya"
               : page < pages.length - 1
                 ? "Lanjut otomatis"
                 : "Balas"}
