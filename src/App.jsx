@@ -2,6 +2,7 @@
 import { expressions } from "./expressions.js";
 import { buildChatRequest } from "./persona.js";
 import { paginateDialogue } from "./dialogue.js";
+import { getSceneTime } from "./sceneTime.js";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 const makeId = () =>
@@ -160,6 +161,18 @@ function Dialogue({ message, onReply, animated }) {
 }
 
 export default function App() {
+  const [sceneTime, setSceneTime] = useState(() => getSceneTime());
+  useEffect(() => {
+    const update = () => setSceneTime(getSceneTime());
+    const timer = setInterval(update, 1000);
+    window.addEventListener("focus", update);
+    document.addEventListener("visibilitychange", update);
+    return () => {
+      clearInterval(timer);
+      window.removeEventListener("focus", update);
+      document.removeEventListener("visibilitychange", update);
+    };
+  }, []);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -270,7 +283,7 @@ export default function App() {
   }
 
   return (
-    <main className={`novel-scene emotion-${emotion}`}>
+    <main className={`novel-scene emotion-${emotion} time-${sceneTime}`}>
       <div className="room-background" aria-hidden="true" />
       <div className="scene-shade" aria-hidden="true" />
       <div
