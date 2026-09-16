@@ -242,7 +242,8 @@ button:active:not(:disabled) {
   background: #ffffffed;
   backdrop-filter: blur(10px);
   padding: 25px 30px 17px;
-  min-height: 160px;
+  height: 190px;
+  min-height: 0;
   box-shadow: 0 10px 50px #081d3733;
   color: #3d5968;
 }
@@ -259,7 +260,10 @@ button:active:not(:disabled) {
   line-height: 1.8;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  min-height: 65px;
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 .dialogue-box.narration .dialogue-text {
   font-style: italic;
@@ -274,6 +278,7 @@ button:active:not(:disabled) {
   font-size: 9px;
   letter-spacing: 0.4px;
   color: #78949f;
+  flex-shrink: 0;
 }
 .dialogue-bottom > span:last-child {
   display: flex;
@@ -687,18 +692,19 @@ button:active:not(:disabled) {
     letter-spacing: 1px;
   }
   .dialogue-box {
-    min-height: 175px;
-    padding: 22px 21px 17px;
-    border-radius: 0 23px 23px 23px;
+    height: clamp(155px, 30dvh, 205px);
+    min-height: 0;
+    padding: 17px 18px 14px;
+    border-radius: 0 18px 18px 18px;
   }
   .dialogue-text {
     font-size: 15px;
-    line-height: 1.75;
-    min-height: 80px;
+    line-height: 1.6;
+    min-height: 0;
   }
   .dialogue-bottom {
     font-size: 8px;
-    margin-top: 17px;
+    margin-top: 10px;
     letter-spacing: 0;
   }
   .last-message {
@@ -760,13 +766,12 @@ button:active:not(:disabled) {
     width: min(800px, calc(100% - 32px));
   }
   .dialogue-box {
-    min-height: 100px;
-    max-height: 50dvh;
-    overflow-y: auto;
+    height: 125px;
+    min-height: 0;
     padding: 15px 20px;
   }
   .dialogue-text {
-    min-height: 30px;
+    min-height: 0;
     font-size: 13px;
   }
   .speaker-name {

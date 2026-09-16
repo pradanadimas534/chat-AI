@@ -22,7 +22,6 @@ const timeLabel = (time) =>
 
 function Icon({ name }) {
   const paths = {
-    menu: <path d="M4 6h16M4 12h16M4 18h16" />,
     close: <path d="m6 6 12 12M18 6 6 18" />,
     send: (
       <>
@@ -102,7 +101,7 @@ function Modal({ title, kind, onClose, children }) {
 }
 
 function Dialogue({ message, onReply, animated }) {
-  const pages = paginateDialogue(message.text);
+  const pages = paginateDialogue(message.text, 110);
   const [page, setPage] = useState(0);
   const [visible, setVisible] = useState(0);
   const content = pages[page];
@@ -294,23 +293,6 @@ export default function App() {
           onError={() => setAssetError(true)}
         />
       </div>
-      <header className="scene-header">
-        <div className="scene-brand">
-          Momo<span>Talk</span>
-          <small>SHIROKO · ABYDOS</small>
-        </div>
-        <button
-          className="menu-button"
-          aria-label="Buka menu"
-          onClick={() => setPanel("menu")}
-        >
-          <Icon name="menu" />
-        </button>
-      </header>
-      <div className="scene-location">
-        <span />
-        Ruang klub · Abydos
-      </div>
       <div className="scene-bottom">
         {lastUser && (
           <button className="last-message" onClick={() => setPanel("history")}>
@@ -405,38 +387,6 @@ export default function App() {
           </form>
         </Modal>
       )}
-      {panel === "menu" && (
-        <Modal
-          title="Ruang obrolan"
-          kind="menu-modal"
-          onClose={() => setPanel(null)}
-        >
-          <p className="menu-caption">Hanya kamu dan Shiroko.</p>
-          <div className="menu-actions">
-            <button onClick={() => setPanel("history")}>
-              <Icon name="history" />
-              Riwayat percakapan
-              <Icon name="next" />
-            </button>
-            <label className="motion-setting">
-              <span>Teks muncul bertahap</span>
-              <input
-                type="checkbox"
-                checked={animated}
-                onChange={(e) => setAnimated(e.target.checked)}
-              />
-            </label>
-          </div>
-          <button
-            className="reset-button"
-            onClick={() => setPanel("reset")}
-            disabled={loading}
-          >
-            Mulai chat baru
-          </button>
-          <p className="menu-footnote">MomoTalk / Shiroko edition</p>
-        </Modal>
-      )}
       {panel === "history" && (
         <Modal
           title="Riwayat percakapan"
@@ -458,6 +408,21 @@ export default function App() {
             ))}
             {loading && <p role="status">Shiroko sedang menulis…</p>}
           </div>
+          <label className="motion-setting">
+            <span>Teks muncul bertahap</span>
+            <input
+              type="checkbox"
+              checked={animated}
+              onChange={(e) => setAnimated(e.target.checked)}
+            />
+          </label>
+          <button
+            className="reset-button"
+            onClick={() => setPanel("reset")}
+            disabled={loading}
+          >
+            Mulai chat baru
+          </button>
         </Modal>
       )}
       {panel === "reset" && (
