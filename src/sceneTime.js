@@ -4,5 +4,6 @@ export function getSceneTime(date = new Date()) {
   if (hour >= 5 && hour < 11) return "morning";
   if (hour >= 11 && hour < 15) return "day";
   if (hour >= 15 && hour < 18) return "evening";
+  if (hour >= 18 && hour < 22) return "night-lit";
   return "night";
 }
