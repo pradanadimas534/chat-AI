@@ -1,5 +1,7 @@
 ﻿# MomoTalk — Shiroko
 
+> Status sementara: karakter dikunci ke **Netral 1** (Shiroko_00.png) selama pengguna memperbaiki aset. Pergantian otomatis dan menu pratinjau ekspresi dinonaktifkan; aset dan resolver tetap disimpan untuk diaktifkan lagi nanti. Animasi pantulan awal balasan tetap aktif. Bagian dokumentasi 18 ekspresi di bawah menjelaskan fitur yang sementara dinonaktifkan.
+
 Frontend React untuk obrolan Shiroko, dengan 18 sprite ekspresi pilihan pengguna dan tampilan desktop/HP.
 
 ## Menjalankan

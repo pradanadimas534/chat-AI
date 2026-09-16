@@ -1,5 +1,5 @@
 ﻿import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { expressions, resolveEmotion } from "./expressions.js";
+import { expressions } from "./expressions.js";
 import { buildChatRequest } from "./persona.js";
 import { paginateDialogue } from "./dialogue.js";
 
@@ -173,7 +173,6 @@ export default function App() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [preview, setPreview] = useState(null);
   const [assetError, setAssetError] = useState(false);
   const [panel, setPanel] = useState(null);
   const [animated, setAnimated] = useState(
@@ -183,13 +182,12 @@ export default function App() {
   const requestRef = useRef(null);
   const lastReply = [...messages].reverse().find((m) => m.role === "model");
   const lastUser = [...messages].reverse().find((m) => m.role === "user");
-  const emotion = preview || (loading ? "thinking" : lastReply.emotion);
+  // Temporarily fixed while the expression assets are being reviewed.
+  const emotion = "neutral";
   const expression = expressions[emotion];
   useEffect(() => {
-    Object.values(expressions).forEach(({ file }) => {
-      const img = new Image();
-      img.src = file;
-    });
+    const img = new Image();
+    img.src = expressions.neutral.file;
     const viewport = window.visualViewport;
     const resize = () =>
       document.documentElement.style.setProperty(
@@ -215,7 +213,6 @@ export default function App() {
     requestRef.current = controller;
     const timer = setTimeout(() => controller.abort(), 45000);
     const id = makeId();
-    setPreview(null);
     setError(null);
     setInput("");
     setLoading(true);
@@ -254,7 +251,7 @@ export default function App() {
           id: makeId(),
           role: "model",
           text: data.reply,
-          emotion: resolveEmotion(data, lastReply.emotion),
+          emotion: "neutral",
           time: new Date(),
         },
       ]);
@@ -278,7 +275,6 @@ export default function App() {
     setMessages([greeting()]);
     setError(null);
     setInput("");
-    setPreview(null);
     setPanel(null);
   }
 
@@ -315,12 +311,6 @@ export default function App() {
         <span />
         Ruang klub · Abydos
       </div>
-      {preview && (
-        <button className="preview-notice" onClick={() => setPreview(null)}>
-          Pratinjau: {expression.label}
-          <span>Kembali otomatis ×</span>
-        </button>
-      )}
       <div className="scene-bottom">
         {lastUser && (
           <button className="last-message" onClick={() => setPanel("history")}>
@@ -437,36 +427,6 @@ export default function App() {
               />
             </label>
           </div>
-          <details className="expression-preview">
-            <summary>
-              Lihat ekspresi <span>18 wajah</span>
-            </summary>
-            <div className="expression-options">
-              <button
-                onClick={() => {
-                  setPreview(null);
-                  setPanel(null);
-                }}
-                aria-pressed={!preview}
-              >
-                Otomatis
-              </button>
-              {Object.entries(expressions)
-                .filter(([key]) => key !== "thinking")
-                .map(([key, value]) => (
-                  <button
-                    key={key}
-                    onClick={() => {
-                      setPreview(key);
-                      setPanel(null);
-                    }}
-                    aria-pressed={preview === key}
-                  >
-                    {value.label}
-                  </button>
-                ))}
-            </div>
-          </details>
           <button
             className="reset-button"
             onClick={() => setPanel("reset")}
