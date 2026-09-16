@@ -216,7 +216,7 @@ button:active:not(:disabled) {
   z-index: 1;
   background: #284b5b;
   color: #fff;
-  padding: 11px 22px;
+  padding: 7px 18px;
   margin-left: 0;
   font-family: Nunito, sans-serif;
   font-size: 17px;
@@ -241,8 +241,8 @@ button:active:not(:disabled) {
   border-radius: 0 25px 25px 25px;
   background: #ffffffed;
   backdrop-filter: blur(10px);
-  padding: 25px 30px 17px;
-  height: 190px;
+  padding: 17px 24px 13px;
+  height: 140px;
   min-height: 0;
   box-shadow: 0 10px 50px #081d3733;
   color: #3d5968;
@@ -684,7 +684,7 @@ button:active:not(:disabled) {
   }
   .speaker-name {
     font-size: 14px;
-    padding: 10px 15px;
+    padding: 6px 13px;
     gap: 13px;
   }
   .speaker-name span {
@@ -692,9 +692,9 @@ button:active:not(:disabled) {
     letter-spacing: 1px;
   }
   .dialogue-box {
-    height: clamp(155px, 30dvh, 205px);
+    height: clamp(125px, 21dvh, 145px);
     min-height: 0;
-    padding: 17px 18px 14px;
+    padding: 13px 16px 11px;
     border-radius: 0 18px 18px 18px;
   }
   .dialogue-text {
@@ -766,7 +766,7 @@ button:active:not(:disabled) {
     width: min(800px, calc(100% - 32px));
   }
   .dialogue-box {
-    height: 125px;
+    height: 115px;
     min-height: 0;
     padding: 15px 20px;
   }

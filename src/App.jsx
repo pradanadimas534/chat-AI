@@ -101,7 +101,7 @@ function Modal({ title, kind, onClose, children }) {
 }
 
 function Dialogue({ message, onReply, animated }) {
-  const pages = paginateDialogue(message.text, 110);
+  const pages = paginateDialogue(message.text, 80);
   const [page, setPage] = useState(0);
   const [visible, setVisible] = useState(0);
   const content = pages[page];
