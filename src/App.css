@@ -518,12 +518,32 @@ button:active:not(:disabled) {
 }
 .compose-modal .modal-surface {
   background: #fff;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(var(--viewport-height, 100dvh) - 40px);
+}
+.compose-modal .modal-header {
+  flex-shrink: 0;
+}
+.compose-modal form {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.compose-modal .error-banner {
+  flex-shrink: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+.compose-modal .composer-footer {
+  flex-shrink: 0;
 }
 .compose-modal textarea {
   width: 100%;
-  resize: vertical;
-  min-height: 110px;
-  max-height: 40dvh;
+  resize: none;
+  flex: 0 1 110px;
+  min-height: 44px;
+  max-height: min(180px, 22vh);
   border: 0;
   outline: none;
   font-size: 16px;

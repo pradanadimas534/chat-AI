@@ -247,7 +247,7 @@ export default function App() {
     if (!text || requestRef.current) return;
     const controller = new AbortController();
     requestRef.current = controller;
-    const timer = setTimeout(() => controller.abort(), 45000);
+    const timer = setTimeout(() => controller.abort(), 70000);
     const id = makeId();
     setError(null);
     setInput("");
