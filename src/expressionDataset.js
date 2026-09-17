@@ -1,6 +1,6 @@
 // Authoritative labels supplied by the user on 2026-09-17.
 // Do not infer different emotions from earlier filenames or cycle variants
-// with different meanings. Automatic expression selection remains disabled.
+// with different meanings. Selection uses selectExpression.js.
 const entries = [
   ["00", "Neutral", "NEUTRAL", "Netral", "Default; tenang tanpa emosi khusus."],
   ["01", "Neutral_Calm", "NEUTRAL", "Netral lembut", "Variasi idle yang sedikit lebih lembut."],

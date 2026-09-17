@@ -1,5 +1,6 @@
 ﻿import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { expressionDataset } from "./expressionDataset.js";
+import { selectExpression } from "./selectExpression.js";
 import { buildChatRequest } from "./persona.js";
 import { paginateDialogue } from "./dialogue.js";
 import { getSceneTime } from "./sceneTime.js";
@@ -218,9 +219,8 @@ export default function App() {
   const requestRef = useRef(null);
   const lastReply = [...messages].reverse().find((m) => m.role === "model");
   const lastUser = [...messages].reverse().find((m) => m.role === "user");
-  // Temporarily fixed while the expression assets are being reviewed.
-  const emotion = "neutral";
-  const expression = expressionDataset.Neutral;
+  const emotion = lastReply?.emotion || "Neutral";
+  const expression = expressionDataset[emotion] || expressionDataset.Neutral;
   useEffect(() => {
     const img = new Image();
     img.src = expressionDataset.Neutral.file;
@@ -287,7 +287,7 @@ export default function App() {
           id: makeId(),
           role: "model",
           text: data.reply,
-          emotion: "neutral",
+          emotion: selectExpression(data),
           time: new Date(),
         },
       ]);
@@ -440,7 +440,7 @@ export default function App() {
                 </header>
                 <p>{m.text}</p>
                 {m.role === "model" && (
-                  <small>{expressionDataset.Neutral.label}</small>
+                  <small>{(expressionDataset[m.emotion] || expressionDataset.Neutral).label}</small>
                 )}
               </article>
             ))}

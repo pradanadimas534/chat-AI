@@ -29,7 +29,8 @@ mapping, Indonesian labels, categories, and descriptions are in
 08 is discomfort, not a happy smile; 09 is empathy, not general sadness;
 15 is now classified. Neither 05 nor 11 represents aggressive anger.
 
-The application still uses only Neutral while the user reviews assets.
-The older resolver in `src/expressions.js` is disabled and uses obsolete labels;
-it must be migrated to this dataset before automatic selection is restored.
+Automatic selection is enabled through `src/selectExpression.js`. Exact canonical
+emotion metadata takes priority; otherwise character actions and first-person
+feelings in the reply select the expression. Unclear replies default to Neutral.
+The older resolver in `src/expressions.js` is unused and has obsolete labels.
 The old filenames in SOURCES.md are historical download provenance, not current labels.
