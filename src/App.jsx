@@ -1,5 +1,5 @@
 ﻿import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { expressions } from "./expressions.js";
+import { expressionDataset } from "./expressionDataset.js";
 import { buildChatRequest } from "./persona.js";
 import { paginateDialogue } from "./dialogue.js";
 import { getSceneTime } from "./sceneTime.js";
@@ -220,10 +220,10 @@ export default function App() {
   const lastUser = [...messages].reverse().find((m) => m.role === "user");
   // Temporarily fixed while the expression assets are being reviewed.
   const emotion = "neutral";
-  const expression = expressions[emotion];
+  const expression = expressionDataset.Neutral;
   useEffect(() => {
     const img = new Image();
-    img.src = expressions.neutral.file;
+    img.src = expressionDataset.Neutral.file;
     const viewport = window.visualViewport;
     const resize = () =>
       document.documentElement.style.setProperty(
@@ -440,7 +440,7 @@ export default function App() {
                 </header>
                 <p>{m.text}</p>
                 {m.role === "model" && (
-                  <small>{expressions[m.emotion].label}</small>
+                  <small>{expressionDataset.Neutral.label}</small>
                 )}
               </article>
             ))}
