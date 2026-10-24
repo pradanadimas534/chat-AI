@@ -2,29 +2,22 @@
 // Scene openings are generated live by the AI backend with at most 2 choices.
 
 export function buildOpeningPrompt(sceneTime) {
-  const now = new Date();
-  const timeStr = new Intl.DateTimeFormat("id-ID", {
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(now);
-
   const timeDescriptions = {
-    morning: "pagi hari yang masih sejuk",
-    day: "siang hari yang terik di tengah gurun",
-    evening: "sore hari saat matahari terbenam keemasan di atas gurun",
-    night: "malam hari yang tenang dan dingin di bawah langit bertabur bintang",
-    "night-lit": "malam hari saat lampu ruang kelas Abydos menyala terang",
+    morning: "pagi hari",
+    day: "siang hari",
+    evening: "sore hari",
+    night: "malam hari",
+    "night-lit": "larut malam",
   };
 
   const period = timeDescriptions[sceneTime] || "hari ini";
 
-  return `[ADEGAN PEMBUKA: Sensei baru saja melangkah masuk ke ruang kelas Abydos pada waktu ${period} (sekitar pukul ${timeStr}). Shiroko yang sedang berada di ruangan menyapa Sensei secara spontan dan alami berdasarkan apa yang sedang ia amati, pikirkan, atau lakukan saat ini.
-1. Tulis sapaan Shiroko (1-3 kalimat).
-2. BACA dialog sapaan yang kamu outputkan tersebut, lalu berikan 1 sampai 2 pilihan respon singkat (maksimal 2 pilihan) untuk Sensei yang langsung merespons sapaan Shiroko tersebut.
-Format di baris akhir:
+  return `Sebagai Shiroko di Abydos pada waktu ${period}, mulailah percakapan baru dengan Sensei secara bebas, alami, dan cerdas. Kamu bebas menentukan sendiri topik pembuka: apa yang sedang kamu pikirkan, amati, rencanakan, atau ingin kamu bicarakan bersama Sensei tanpa terpaku pada skenario kaku atau template tertentu.
+
+Setelah menyusun perkataan Shiroko, baca kembali apa yang kamu katakan, lalu berikan 1 sampai 2 pilihan balasan untuk Sensei (maksimal 2 pilihan) yang nyambung dengan dialogmu:
 [Pilihan]
 1. (Pilihan respon Sensei A)
-2. (Pilihan respon Sensei B - opsional)]`;
+2. (Pilihan respon Sensei B - opsional)`;
 }
 
 // Emergency offline fallback in case the initial AI request fails (1-2 choices)
