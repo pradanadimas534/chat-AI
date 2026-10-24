@@ -198,6 +198,7 @@ export default function App() {
 
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
+  const [isReplying, setIsReplying] = useState(false);
   const [dialogueDone, setDialogueDone] = useState(false);
   const [loading, setLoading] = useState(true);
   const [hideUI, setHideUI] = useState(false);
@@ -219,6 +220,7 @@ export default function App() {
   // Generate 100% dynamic AI opening scene
   const generateDynamicOpening = useCallback(async () => {
     setLoading(true);
+    setIsReplying(false);
     setDialogueDone(false);
     setError(null);
     setMessages([]);
@@ -293,10 +295,10 @@ export default function App() {
   useEffect(() => setAssetError(false), [emotion]);
 
   useEffect(() => {
-    if (panel === "compose") {
+    if (isReplying) {
       setTimeout(() => inputRef.current?.focus(), 60);
     }
-  }, [panel]);
+  }, [isReplying]);
 
   async function handleSendMessage(e) {
     if (e) e.preventDefault();
@@ -309,6 +311,7 @@ export default function App() {
     const id = makeId();
     setError(null);
     setLoading(true);
+    setIsReplying(false);
     setDialogueDone(false);
     setPanel(null);
     setInput("");
@@ -367,6 +370,7 @@ export default function App() {
       setInput(textToSend);
       setMessages((prev) => prev.filter((m) => m.id !== id));
       setDialogueDone(true);
+      setIsReplying(true);
     } finally {
       clearTimeout(timer);
       requestRef.current = null;
@@ -377,6 +381,7 @@ export default function App() {
   function resetChat() {
     if (requestRef.current) return;
     setPanel(null);
+    setIsReplying(false);
     generateDynamicOpening();
   }
 
@@ -410,11 +415,11 @@ export default function App() {
         aria-label="Scene controls"
       >
         <button
-          className="scene__control"
+          className={`scene__control ${isReplying ? "scene__control--active" : ""}`}
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            setPanel("compose");
+            setIsReplying((prev) => !prev);
           }}
         >
           Balas
@@ -496,74 +501,65 @@ export default function App() {
               </p>
             </div>
           </section>
+        ) : isReplying ? (
+          <section className="dialogue dialogue--reply" aria-label="Kolom balasan Sensei">
+            <img className="dialogue__panel" src="/ui/dialogue-box.png" alt="" />
+            <div className="dialogue__content">
+              <header className="dialogue__header">
+                <h1>Sensei</h1>
+                <p>Schale · Penasihat</p>
+              </header>
+              <img className="dialogue__rule" src="/ui/dialogue-rule.svg" alt="" />
+              <form className="dialogue__reply-form" onSubmit={handleSendMessage}>
+                <textarea
+                  ref={inputRef}
+                  className="dialogue__reply-input"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      if (input.trim() && !loading) handleSendMessage(e);
+                    }
+                  }}
+                  placeholder="Tulis balasan untuk Shiroko di sini... (Enter untuk kirim)"
+                  rows={2}
+                  maxLength={400}
+                  disabled={loading}
+                />
+                <div className="dialogue__reply-actions">
+                  <button
+                    type="button"
+                    className="dialogue__cancel-btn"
+                    onClick={() => setIsReplying(false)}
+                  >
+                    Batal
+                  </button>
+                  <button
+                    className="dialogue__send-btn"
+                    type="submit"
+                    disabled={loading || !input.trim()}
+                    aria-label="Kirim balasan"
+                  >
+                    <span>Kirim</span>
+                    <Icon name="send" />
+                  </button>
+                </div>
+              </form>
+            </div>
+          </section>
         ) : lastReply ? (
           <Dialogue
             key={lastReply.id}
             message={lastReply}
             onFinished={() => setDialogueDone(true)}
-            onReply={() => setPanel("compose")}
+            onReply={() => setIsReplying(true)}
             animated={animated}
             paused={panel !== null}
             autoPlay={autoPlay}
           />
         ) : null}
       </div>
-
-      {/* Composer Modal (Isi Sendiri) */}
-      {panel === "compose" && (
-        <div
-          className="menu"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="compose-title"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setPanel(null);
-          }}
-        >
-          <div className="menu__card compose__card">
-            <div className="modal-title-row">
-              <h2 id="compose-title">Balas Shiroko</h2>
-              <button
-                className="menu-close-btn"
-                type="button"
-                onClick={() => setPanel(null)}
-                aria-label="Tutup kolom balas"
-              >
-                <Icon name="close" />
-              </button>
-            </div>
-            <form onSubmit={handleSendMessage}>
-              <textarea
-                ref={inputRef}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    if (input.trim() && !loading) handleSendMessage(e);
-                  }
-                }}
-                placeholder="Tulis balasan untuk Shiroko di sini... (Enter untuk kirim)"
-                rows={3}
-                maxLength={400}
-                disabled={loading}
-              />
-              <div className="composer-footer">
-                <span className="composer-hint">{input.length}/400</span>
-                <button
-                  className="send-button"
-                  type="submit"
-                  disabled={loading || !input.trim()}
-                  aria-label="Kirim pesan"
-                >
-                  <span>Kirim</span>
-                  <Icon name="send" />
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* History Modal */}
       {panel === "history" && (
@@ -643,7 +639,10 @@ export default function App() {
             </div>
             <button
               type="button"
-              onClick={() => setPanel("compose")}
+              onClick={() => {
+                setPanel(null);
+                setIsReplying(true);
+              }}
             >
               Balas Shiroko
             </button>
