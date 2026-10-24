@@ -1,4 +1,4 @@
-﻿import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { expressionDataset } from "./expressionDataset.js";
 import { selectExpression } from "./selectExpression.js";
 import { buildChatRequest } from "./persona.js";
@@ -12,7 +12,16 @@ const timeLabel = (time) =>
   new Intl.DateTimeFormat("id-ID", {
     hour: "2-digit",
     minute: "2-digit",
-  }).format(time);
+  }).format(time instanceof Date ? time : new Date(time));
+
+const INITIAL_GREETING = {
+  id: "greeting-0",
+  role: "model",
+  text: "Nn, Sensei. Senang melihatmu. Ada yang ingin kamu bicarakan hari ini?",
+  emotion: "Neutral",
+  greeting: true,
+  time: new Date(),
+};
 
 function Icon({ name }) {
   const paths = {
@@ -39,12 +48,12 @@ function Icon({ name }) {
   };
   return (
     <svg
-      width="21"
-      height="21"
+      width="18"
+      height="18"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.8"
+      strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
@@ -54,87 +63,61 @@ function Icon({ name }) {
   );
 }
 
-function Modal({ title, kind, onClose, children }) {
-  const ref = useRef(null);
-  const closeRef = useRef(onClose);
-  closeRef.current = onClose;
-  useLayoutEffect(() => {
-    const modal = ref.current;
-    const previous = document.activeElement;
-    modal.showModal();
-    modal.querySelector("[data-autofocus]")?.focus();
-    return () => {
-      modal.close();
-      if (previous?.isConnected) previous.focus();
-    };
-  }, []);
-  return (
-    <dialog
-      ref={ref}
-      className={`modal ${kind}`}
-      aria-labelledby={`${kind}-title`}
-      onCancel={(e) => {
-        e.preventDefault();
-        closeRef.current();
-      }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) closeRef.current();
-      }}
-    >
-      <div className="modal-surface">
-        <header className="modal-header">
-          <h2 id={`${kind}-title`}>{title}</h2>
-          <button className="icon-button" onClick={onClose} aria-label="Tutup">
-            <Icon name="close" />
-          </button>
-        </header>
-        {children}
-      </div>
-    </dialog>
-  );
-}
-
-function Dialogue({ message, onReply, animated, paused }) {
+function Dialogue({ message, onReply, animated, paused, autoPlay }) {
   const pages = paginateDialogue(message.text, 80);
   const [page, setPage] = useState(0);
   const [visible, setVisible] = useState(0);
   const textRef = useRef(null);
   const [atBottom, setAtBottom] = useState(true);
+
   const checkScroll = () => {
     const el = textRef.current;
     if (el) setAtBottom(el.scrollHeight - el.clientHeight - el.scrollTop < 4);
   };
-  const content = pages[page];
+
+  const content = pages[page] || { text: message.text, narration: false };
   const complete = !animated || visible >= content.text.length;
+
   useLayoutEffect(() => {
-    textRef.current.scrollTop = 0;
+    if (textRef.current) textRef.current.scrollTop = 0;
     checkScroll();
   }, [page]);
+
   useLayoutEffect(checkScroll, [visible, animated, content.text]);
+
   useEffect(() => {
     setVisible(0);
-    if (!animated) return;
+    if (!animated) {
+      setVisible(content.text.length);
+      return;
+    }
     const timer = setInterval(
       () =>
         setVisible((value) => {
-          if (value + 2 >= content.text.length) clearInterval(timer);
-          return Math.min(value + 2, content.text.length);
+          if (value + 2 >= content.text.length) {
+            clearInterval(timer);
+            return content.text.length;
+          }
+          return value + 2;
         }),
       22,
     );
     return () => clearInterval(timer);
   }, [page, content.text, animated]);
+
   useEffect(() => {
-    if (!complete || !atBottom || paused || page >= pages.length - 1) return;
+    if (!complete || !atBottom || paused) return;
+    if (!autoPlay && page >= pages.length - 1) return;
     let timer;
     const schedule = () => {
       clearTimeout(timer);
       if (document.hidden) return;
-      // Allow reading time after typing finishes; longer pages stay longer.
       timer = setTimeout(() => {
-        setVisible(0);
-        setPage((current) => current + 1);
-      }, Math.max(2500, content.text.split(/\s+/).length * 300));
+        if (page < pages.length - 1) {
+          setVisible(0);
+          setPage((current) => current + 1);
+        }
+      }, Math.max(2500, content.text.split(/\s+/).length * 280));
     };
     schedule();
     document.addEventListener("visibilitychange", schedule);
@@ -142,49 +125,59 @@ function Dialogue({ message, onReply, animated, paused }) {
       clearTimeout(timer);
       document.removeEventListener("visibilitychange", schedule);
     };
-  }, [complete, atBottom, paused, page, pages.length, content.text]);
-  function advance() {
-    if (!complete) setVisible(content.text.length);
-    else if (page < pages.length - 1) {
+  }, [complete, atBottom, paused, page, pages.length, content.text, autoPlay]);
+
+  function advance(e) {
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (!complete) {
+      setVisible(content.text.length);
+    } else if (page < pages.length - 1) {
       setVisible(0);
       setPage(page + 1);
-    } else onReply();
+    } else {
+      onReply();
+    }
   }
+
   const action = !complete
     ? "Tampilkan seluruh teks"
     : page < pages.length - 1
       ? "Lanjut"
       : "Balas Shiroko";
+
   return (
-    <section className="dialogue" aria-label="Dialog Shiroko">
-      <div className="speaker-name">
-        Sunaookami Shiroko<span>砂狼シロコ</span>
-      </div>
-      <button
-        className={`dialogue-box ${content.narration ? "narration" : ""}`}
-        onClick={advance}
-        aria-label={action}
-      >
-        <span ref={textRef} onScroll={checkScroll} className="dialogue-text" aria-hidden="true">
+    <section
+      className="dialogue"
+      aria-label="Dialog Shiroko"
+      aria-live="polite"
+      onClick={advance}
+    >
+      <img className="dialogue__panel" src="/ui/dialogue-box.png" alt="" />
+      <div className="dialogue__content">
+        <header className="dialogue__header">
+          <h1>Sunaookami Shiroko</h1>
+          <p>
+            {content.narration ? "Narasi" : "Abydos High School · 対策委員会"}
+            {pages.length > 1 ? ` (${page + 1}/${pages.length})` : ""}
+          </p>
+        </header>
+        <img className="dialogue__rule" src="/ui/dialogue-rule.svg" alt="" />
+        <p
+          ref={textRef}
+          onScroll={checkScroll}
+          className={`dialogue__text ${content.narration ? "narration" : ""}`}
+        >
           {complete ? content.text : content.text.slice(0, visible)}
           <span className="text-cursor">{!complete ? "▎" : ""}</span>
-        </span>
-        <span className="dialogue-bottom">
-          <span>
-            {content.narration ? "Narasi" : "Shiroko"}
-            {pages.length > 1 ? ` · ${page + 1}/${pages.length}` : ""}
-          </span>
-          <span>
-            {!complete
-              ? "Ketuk untuk tampilkan semua"
-              : !atBottom
-                ? "Gulir untuk baca lanjutannya"
-              : page < pages.length - 1
-                ? "Lanjut otomatis"
-                : "Balas"}
-            <Icon name="next" />
-          </span>
-        </span>
+        </p>
+      </div>
+      <button
+        className="dialogue__next"
+        type="button"
+        aria-label={action}
+        onClick={advance}
+      >
+        <img src="/ui/dialogue-next.svg" alt="" />
       </button>
       <span className="sr-only" role="status">
         {content.text}
@@ -206,21 +199,26 @@ export default function App() {
       document.removeEventListener("visibilitychange", update);
     };
   }, []);
-  const [messages, setMessages] = useState([]);
+
+  const [messages, setMessages] = useState([INITIAL_GREETING]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [assetError, setAssetError] = useState(false);
   const [panel, setPanel] = useState(null);
+  const [autoPlay, setAutoPlay] = useState(false);
   const [animated, setAnimated] = useState(
     () => !window.matchMedia("(prefers-reduced-motion: reduce)").matches,
   );
+
   const inputRef = useRef(null);
   const requestRef = useRef(null);
+
   const lastReply = [...messages].reverse().find((m) => m.role === "model");
   const lastUser = [...messages].reverse().find((m) => m.role === "user");
   const emotion = lastReply?.emotion || "Neutral";
   const expression = expressionDataset[emotion] || expressionDataset.Neutral;
+
   useEffect(() => {
     const img = new Image();
     img.src = expressionDataset.Neutral.file;
@@ -239,10 +237,11 @@ export default function App() {
       window.removeEventListener("resize", resize);
     };
   }, []);
+
   useEffect(() => setAssetError(false), [emotion]);
 
   async function sendMessage(e) {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     const text = input.trim();
     if (!text || requestRef.current) return;
     const controller = new AbortController();
@@ -306,21 +305,25 @@ export default function App() {
       setLoading(false);
     }
   }
+
   function resetChat() {
     if (requestRef.current) return;
-    setMessages([]);
+    setMessages([INITIAL_GREETING]);
     setError(null);
     setInput("");
     setPanel(null);
   }
 
   return (
-    <main className={`novel-scene emotion-${emotion} time-${sceneTime}`}>
-      <div className="room-background" aria-hidden="true" />
+    <main className={`scene novel-scene emotion-${emotion} time-${sceneTime}`} aria-label="Visual novel dialogue scene">
+      {/* Dynamic Classroom Background (Kept as requested) */}
+      <div className="room-background scene__background" aria-hidden="true" />
       <div className="scene-shade" aria-hidden="true" />
+
+      {/* Shiroko Character Portrait with emotion switching (Kept as requested) */}
       <div
         key={lastReply?.id || "idle"}
-        className={`character-layer ${lastReply ? "reply-bounce" : ""}`}
+        className={`scene__character character-layer ${lastReply ? "reply-bounce" : ""}`}
       >
         <img
           key={expression.file}
@@ -330,153 +333,288 @@ export default function App() {
           onError={() => setAssetError(true)}
         />
       </div>
-      <div className="scene-bottom">
-        {lastUser && (
-          <button className="last-message" onClick={() => setPanel("history")}>
-            <span>Sensei</span>
-            <span>{lastUser.text}</span>
-          </button>
-        )}
-        {loading ? (
-          <section className="dialogue waiting" role="status">
-            <div className="speaker-name">Shiroko</div>
-            <div className="dialogue-box">
-              <p>
-                Shiroko sedang memikirkan balasan
-                <span className="loading-dots">…</span>
-              </p>
-            </div>
-          </section>
-        ) : lastReply ? (
-          <Dialogue
-            key={lastReply.id}
-            message={lastReply}
-            onReply={() => setPanel("compose")}
-            animated={animated}
-            paused={panel !== null}
-          />
-        ) : null}
-        <nav className="scene-controls" aria-label="Kontrol obrolan">
-          <button onClick={() => setPanel("history")}>
-            <Icon name="history" />
-            Riwayat
-          </button>
-          <span className="mood-label">{expression.label}</span>
-          <button
-            className="reply-button"
-            onClick={() => setPanel("compose")}
-            disabled={loading}
-          >
-            <Icon name="chat" />
-            Balas
-          </button>
-        </nav>
+
+      {/* Top Right Scene Controls */}
+      <div className="scene__controls" aria-label="Kontrol cerita">
+        <button
+          className={`scene__control ${autoPlay ? "scene__control--active" : ""}`}
+          type="button"
+          aria-pressed={autoPlay}
+          onClick={() => setAutoPlay((prev) => !prev)}
+        >
+          Auto
+        </button>
+        <button
+          className="scene__control"
+          type="button"
+          onClick={() => setPanel("history")}
+        >
+          Riwayat
+        </button>
+        <button
+          className="scene__control"
+          type="button"
+          onClick={() => setPanel("menu")}
+        >
+          Menu
+        </button>
       </div>
 
-      {panel === "compose" && (
-        <Modal
-          title="Balas Shiroko"
-          kind="compose-modal"
-          onClose={() => setPanel(null)}
+      {/* Visual Novel Choice Button to reply */}
+      {!loading && (
+        <button
+          className="choice"
+          type="button"
+          onClick={() => setPanel("compose")}
+          aria-label="Balas pesan Shiroko"
         >
-          <form onSubmit={sendMessage}>
-            <label className="sr-only" htmlFor="message">
-              Pesan untuk Shiroko
-            </label>
-            <textarea
-              id="message"
-              ref={inputRef}
-              data-autofocus
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Tulis pesanmu, Sensei…"
-              rows={4}
-              maxLength={6000}
-              disabled={loading}
-              onKeyDown={(e) => {
-                if (
-                  e.key === "Enter" &&
-                  !e.shiftKey &&
-                  !e.nativeEvent.isComposing &&
-                  !window.matchMedia("(pointer: coarse)").matches
-                ) {
-                  e.preventDefault();
-                  e.currentTarget.form.requestSubmit();
-                }
-              }}
-            />
-            {error && (
-              <div className="error-banner" role="alert">
-                {error}
-                <small>Drafmu tetap tersimpan. Kamu bisa kirim ulang.</small>
-              </div>
-            )}
-            <div className="composer-footer">
-              <span>Obrolan kecil, cerita baru.</span>
+          <img src="/ui/choice-box.png" alt="" />
+          <span>“Balas Shiroko…”</span>
+        </button>
+      )}
+
+      {/* Dialogue Box */}
+      {loading ? (
+        <section className="dialogue waiting" aria-live="polite">
+          <img className="dialogue__panel" src="/ui/dialogue-box.png" alt="" />
+          <div className="dialogue__content">
+            <header className="dialogue__header">
+              <h1>Sunaookami Shiroko</h1>
+              <p>Abydos High School · 対策委員会</p>
+            </header>
+            <img className="dialogue__rule" src="/ui/dialogue-rule.svg" alt="" />
+            <p className="dialogue__text">
+              Shiroko sedang memikirkan balasan
+              <span className="loading-dots">…</span>
+            </p>
+          </div>
+        </section>
+      ) : lastReply ? (
+        <Dialogue
+          key={lastReply.id}
+          message={lastReply}
+          onReply={() => setPanel("compose")}
+          animated={animated}
+          paused={panel !== null}
+          autoPlay={autoPlay}
+        />
+      ) : null}
+
+      {/* Compose Modal */}
+      {panel === "compose" && (
+        <div
+          className="menu"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="compose-title"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setPanel(null);
+          }}
+        >
+          <div className="menu__card compose__card">
+            <div className="modal-title-row">
+              <h2 id="compose-title">Balas Shiroko</h2>
               <button
-                className="send-button"
-                type="submit"
-                disabled={loading || !input.trim()}
-                aria-label="Kirim pesan"
+                className="menu-close-btn"
+                type="button"
+                onClick={() => setPanel(null)}
+                aria-label="Tutup"
               >
-                <Icon name="send" />
+                <Icon name="close" />
               </button>
             </div>
-          </form>
-        </Modal>
-      )}
-      {panel === "history" && (
-        <Modal
-          title="Riwayat percakapan"
-          kind="history-modal"
-          onClose={() => setPanel(null)}
-        >
-          <div className="message-list" role="log" aria-label="Pesan">
-            {messages.map((m) => (
-              <article className={`history-message ${m.role}`} key={m.id}>
-                <header>
-                  <strong>{m.role === "model" ? "Shiroko" : "Sensei"}</strong>
-                  <time>{timeLabel(m.time)}</time>
-                </header>
-                <p>{m.text}</p>
-                {m.role === "model" && (
-                  <small>{(expressionDataset[m.emotion] || expressionDataset.Neutral).label}</small>
-                )}
-              </article>
-            ))}
-            {loading && <p role="status">Shiroko sedang menulis…</p>}
+            <form onSubmit={sendMessage}>
+              <label className="sr-only" htmlFor="message">
+                Pesan untuk Shiroko
+              </label>
+              <textarea
+                id="message"
+                ref={inputRef}
+                autoFocus
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Tulis pesanmu, Sensei…"
+                rows={4}
+                maxLength={6000}
+                disabled={loading}
+                onKeyDown={(e) => {
+                  if (
+                    e.key === "Enter" &&
+                    !e.shiftKey &&
+                    !e.nativeEvent.isComposing &&
+                    !window.matchMedia("(pointer: coarse)").matches
+                  ) {
+                    e.preventDefault();
+                    e.currentTarget.form.requestSubmit();
+                  }
+                }}
+              />
+              {error && (
+                <div className="error-banner" role="alert">
+                  {error}
+                  <small>Drafmu tetap tersimpan. Kamu bisa kirim ulang.</small>
+                </div>
+              )}
+              <div className="composer-footer">
+                <span className="composer-hint">Shift+Enter untuk baris baru</span>
+                <button
+                  className="send-button"
+                  type="submit"
+                  disabled={loading || !input.trim()}
+                  aria-label="Kirim pesan"
+                >
+                  <span>Kirim</span>
+                  <Icon name="send" />
+                </button>
+              </div>
+            </form>
           </div>
-          <label className="motion-setting">
-            <span>Teks muncul bertahap</span>
-            <input
-              type="checkbox"
-              checked={animated}
-              onChange={(e) => setAnimated(e.target.checked)}
-            />
-          </label>
-          <button
-            className="reset-button"
-            onClick={() => setPanel("reset")}
-            disabled={loading}
-          >
-            Mulai chat baru
-          </button>
-        </Modal>
+        </div>
       )}
-      {panel === "reset" && (
-        <Modal
-          title="Mulai cerita baru?"
-          kind="reset-modal"
-          onClose={() => setPanel(null)}
+
+      {/* History Modal */}
+      {panel === "history" && (
+        <div
+          className="menu"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="history-title"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setPanel(null);
+          }}
         >
-          <p>Riwayat percakapan saat ini akan dibersihkan.</p>
-          <div className="confirm-actions">
-            <button onClick={() => setPanel(null)}>Kembali</button>
-            <button onClick={resetChat} disabled={loading}>
-              Mulai chat baru
+          <div className="menu__card history__card">
+            <div className="modal-title-row">
+              <h2 id="history-title">Riwayat Percakapan</h2>
+              <button
+                className="menu-close-btn"
+                type="button"
+                onClick={() => setPanel(null)}
+                aria-label="Tutup riwayat"
+              >
+                <Icon name="close" />
+              </button>
+            </div>
+            <div className="message-list" role="log" aria-label="Pesan">
+              {messages.map((m) => (
+                <article className={`history-message ${m.role}`} key={m.id}>
+                  <header>
+                    <strong>{m.role === "model" ? "Shiroko" : "Sensei"}</strong>
+                    <time>{timeLabel(m.time)}</time>
+                  </header>
+                  <p>{m.text}</p>
+                  {m.role === "model" && m.emotion && (
+                    <small>
+                      {(expressionDataset[m.emotion] || expressionDataset.Neutral).label}
+                    </small>
+                  )}
+                </article>
+              ))}
+              {loading && (
+                <p role="status" className="history-waiting">
+                  Shiroko sedang memikirkan balasan…
+                </p>
+              )}
+            </div>
+            <div className="modal-actions">
+              <button type="button" onClick={() => setPanel(null)}>
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Menu Modal */}
+      {panel === "menu" && (
+        <div
+          className="menu"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="menu-title"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setPanel(null);
+          }}
+        >
+          <div className="menu__card">
+            <div className="modal-title-row">
+              <h2 id="menu-title">Menu</h2>
+              <button
+                className="menu-close-btn"
+                type="button"
+                onClick={() => setPanel(null)}
+                aria-label="Tutup menu"
+              >
+                <Icon name="close" />
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => setPanel("compose")}
+            >
+              Balas Shiroko
+            </button>
+            <button
+              type="button"
+              onClick={() => setPanel("history")}
+            >
+              Riwayat Obrolan
+            </button>
+            <button
+              type="button"
+              onClick={() => setAnimated((prev) => !prev)}
+            >
+              Animasi Teks: {animated ? "Aktif" : "Nonaktif"}
+            </button>
+            <button
+              type="button"
+              className="danger-btn"
+              onClick={() => setPanel("reset")}
+            >
+              Mulai Cerita Baru
+            </button>
+            <button
+              type="button"
+              className="resume-btn"
+              onClick={() => setPanel(null)}
+            >
+              Lanjut
             </button>
           </div>
-        </Modal>
+        </div>
+      )}
+
+      {/* Reset Confirmation Modal */}
+      {panel === "reset" && (
+        <div
+          className="menu"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="reset-title"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setPanel(null);
+          }}
+        >
+          <div className="menu__card">
+            <h2 id="reset-title">Mulai Cerita Baru?</h2>
+            <p style={{ color: "#4c667c", lineHeight: "1.5" }}>
+              Riwayat percakapan saat ini akan dibersihkan dan kembali ke percakapan awal.
+            </p>
+            <div className="confirm-actions">
+              <button type="button" onClick={() => setPanel(null)}>
+                Batal
+              </button>
+              <button
+                type="button"
+                className="danger-btn"
+                onClick={resetChat}
+                disabled={loading}
+              >
+                Mulai Ulang
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </main>
   );
