@@ -4,6 +4,10 @@ import { selectExpression } from "./selectExpression.js";
 import { buildChatRequest } from "./persona.js";
 import { paginateDialogue } from "./dialogue.js";
 import { getSceneTime } from "./sceneTime.js";
+import {
+  extractDialogueAndChoices,
+  generateFallbackChoices,
+} from "./choices.js";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 const makeId = () =>
@@ -23,21 +27,15 @@ const INITIAL_GREETING = {
   time: new Date(),
 };
 
+const INITIAL_CHOICES = [
+  "Bagaimana kabar Abydos hari ini?",
+  "Mau sepedaan atau lari pagi bersamaku?",
+  "Aku cuma ingin mampir melihatmu, Shiroko.",
+];
+
 function Icon({ name }) {
   const paths = {
     close: <path d="m6 6 12 12M18 6 6 18" />,
-    send: (
-      <>
-        <path d="m21 3-6 18-4-8-8-4 18-6Z" />
-        <path d="m21 3-10 10" />
-      </>
-    ),
-    chat: (
-      <>
-        <path d="M21 11a8 8 0 0 1-8 8H5l-3 3V11a9 9 0 0 1 19 0Z" />
-        <path d="M7 9h9M7 13h6" />
-      </>
-    ),
     history: (
       <>
         <path d="M3 10a9 9 0 1 1 2 8M3 4v6h6" />
@@ -63,7 +61,7 @@ function Icon({ name }) {
   );
 }
 
-function Dialogue({ message, onReply, animated, paused, autoPlay }) {
+function Dialogue({ message, onFinished, animated, paused, autoPlay }) {
   const pages = paginateDialogue(message.text, 80);
   const [page, setPage] = useState(0);
   const [visible, setVisible] = useState(0);
@@ -105,6 +103,13 @@ function Dialogue({ message, onReply, animated, paused, autoPlay }) {
     return () => clearInterval(timer);
   }, [page, content.text, animated]);
 
+  // Notify parent when dialogue reaches the end
+  useEffect(() => {
+    if (complete && page >= pages.length - 1) {
+      onFinished?.();
+    }
+  }, [complete, page, pages.length, onFinished]);
+
   useEffect(() => {
     if (!complete || !atBottom || paused) return;
     if (!autoPlay && page >= pages.length - 1) return;
@@ -134,8 +139,6 @@ function Dialogue({ message, onReply, animated, paused, autoPlay }) {
     } else if (page < pages.length - 1) {
       setVisible(0);
       setPage(page + 1);
-    } else {
-      onReply();
     }
   }
 
@@ -143,7 +146,7 @@ function Dialogue({ message, onReply, animated, paused, autoPlay }) {
     ? "Tampilkan seluruh teks"
     : page < pages.length - 1
       ? "Lanjut"
-      : "Balas Shiroko";
+      : "Lanjut dialog";
 
   return (
     <section
@@ -201,7 +204,8 @@ export default function App() {
   }, []);
 
   const [messages, setMessages] = useState([INITIAL_GREETING]);
-  const [input, setInput] = useState("");
+  const [choices, setChoices] = useState(INITIAL_CHOICES);
+  const [dialogueDone, setDialogueDone] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [assetError, setAssetError] = useState(false);
@@ -211,11 +215,9 @@ export default function App() {
     () => !window.matchMedia("(prefers-reduced-motion: reduce)").matches,
   );
 
-  const inputRef = useRef(null);
   const requestRef = useRef(null);
 
   const lastReply = [...messages].reverse().find((m) => m.role === "model");
-  const lastUser = [...messages].reverse().find((m) => m.role === "user");
   const emotion = lastReply?.emotion || "Neutral";
   const expression = expressionDataset[emotion] || expressionDataset.Neutral;
 
@@ -240,22 +242,22 @@ export default function App() {
 
   useEffect(() => setAssetError(false), [emotion]);
 
-  async function sendMessage(e) {
-    if (e && e.preventDefault) e.preventDefault();
-    const text = input.trim();
-    if (!text || requestRef.current) return;
+  async function handleSelectChoice(choiceText) {
+    if (loading || requestRef.current) return;
     const controller = new AbortController();
     requestRef.current = controller;
     const timer = setTimeout(() => controller.abort(), 70000);
     const id = makeId();
     setError(null);
-    setInput("");
     setLoading(true);
+    setDialogueDone(false);
     setPanel(null);
+
     setMessages((prev) => [
       ...prev,
-      { id, role: "user", text, time: new Date() },
+      { id, role: "user", text: choiceText, time: new Date() },
     ]);
+
     try {
       const history = messages
         .filter((m) => !m.greeting)
@@ -263,42 +265,56 @@ export default function App() {
           role: m.role === "model" ? "assistant" : "user",
           content: m.text,
         }));
+
       const res = await fetch(`${API_BASE}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(buildChatRequest(text, history)),
+        body: JSON.stringify(buildChatRequest(choiceText, history)),
         signal: controller.signal,
       });
+
       const data = await res.json().catch(() => {
         throw new Error("Shiroko belum bisa membalas. Coba lagi sebentar, ya.");
       });
+
       if (!res.ok)
         throw new Error(
           typeof data.error === "string"
             ? data.error
             : "Pesan belum terkirim. Coba lagi, ya.",
         );
+
       if (typeof data.reply !== "string" || !data.reply.trim())
-        throw new Error("Balasannya kosong. Coba kirim lagi, ya.");
+        throw new Error("Balasannya kosong. Coba pilih lagi, ya.");
+
+      // Parse dialogue and choices from backend response
+      const parsed = extractDialogueAndChoices(data.reply);
+      const cleanReply = parsed.text || data.reply;
+      const nextChoices =
+        parsed.choices.length > 0
+          ? parsed.choices
+          : generateFallbackChoices(cleanReply);
+
       setMessages((prev) => [
         ...prev,
         {
           id: makeId(),
           role: "model",
-          text: data.reply,
-          emotion: selectExpression(data),
+          text: cleanReply,
+          emotion: selectExpression({ emotion: data.emotion, reply: cleanReply }),
           time: new Date(),
         },
       ]);
+      setChoices(nextChoices);
     } catch (err) {
       setError(
         err.name === "AbortError"
-          ? "Balasannya terlalu lama. Coba kirim lagi, ya."
-          : "Pesan belum terkirim. " + err.message,
+          ? "Balasan Shiroko memakan waktu terlalu lama. Silakan coba pilih lagi."
+          : "Pesan belum terkirim: " + err.message,
       );
-      setInput(text);
+      // Revert user message on failure so they can pick again
       setMessages((prev) => prev.filter((m) => m.id !== id));
-      setPanel("compose");
+      setDialogueDone(true);
     } finally {
       clearTimeout(timer);
       requestRef.current = null;
@@ -309,18 +325,22 @@ export default function App() {
   function resetChat() {
     if (requestRef.current) return;
     setMessages([INITIAL_GREETING]);
+    setChoices(INITIAL_CHOICES);
+    setDialogueDone(true);
     setError(null);
-    setInput("");
     setPanel(null);
   }
 
   return (
-    <main className={`scene novel-scene emotion-${emotion} time-${sceneTime}`} aria-label="Visual novel dialogue scene">
-      {/* Dynamic Classroom Background (Kept as requested) */}
+    <main
+      className={`scene novel-scene emotion-${emotion} time-${sceneTime}`}
+      aria-label="Visual novel dialogue scene"
+    >
+      {/* Dynamic Classroom Background */}
       <div className="room-background scene__background" aria-hidden="true" />
       <div className="scene-shade" aria-hidden="true" />
 
-      {/* Shiroko Character Portrait with emotion switching (Kept as requested) */}
+      {/* Shiroko Character Portrait with emotion switching */}
       <div
         key={lastReply?.id || "idle"}
         className={`scene__character character-layer ${lastReply ? "reply-bounce" : ""}`}
@@ -360,17 +380,39 @@ export default function App() {
         </button>
       </div>
 
-      {/* Visual Novel Choice Button to reply */}
-      {!loading && (
-        <button
-          className="choice"
-          type="button"
-          onClick={() => setPanel("compose")}
-          aria-label="Balas pesan Shiroko"
+      {/* Recommended Choices for Sensei (Visual Novel Game Style) */}
+      {!loading && dialogueDone && choices.length > 0 && (
+        <div
+          className="choices-container"
+          role="group"
+          aria-label="Pilihan respon Sensei"
         >
-          <img src="/ui/choice-box.png" alt="" />
-          <span>“Balas Shiroko…”</span>
-        </button>
+          {choices.map((choice, idx) => (
+            <button
+              key={`${idx}-${choice}`}
+              className="choice-button"
+              type="button"
+              onClick={() => handleSelectChoice(choice)}
+            >
+              <img src="/ui/choice-box.png" alt="" />
+              <span>“{choice}”</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Error notification banner if request fails */}
+      {error && !loading && (
+        <div className="scene-error-toast" role="alert">
+          <p>{error}</p>
+          <button
+            type="button"
+            className="toast-retry-btn"
+            onClick={() => setError(null)}
+          >
+            Tutup
+          </button>
+        </div>
       )}
 
       {/* Dialogue Box */}
@@ -393,84 +435,12 @@ export default function App() {
         <Dialogue
           key={lastReply.id}
           message={lastReply}
-          onReply={() => setPanel("compose")}
+          onFinished={() => setDialogueDone(true)}
           animated={animated}
           paused={panel !== null}
           autoPlay={autoPlay}
         />
       ) : null}
-
-      {/* Compose Modal */}
-      {panel === "compose" && (
-        <div
-          className="menu"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="compose-title"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setPanel(null);
-          }}
-        >
-          <div className="menu__card compose__card">
-            <div className="modal-title-row">
-              <h2 id="compose-title">Balas Shiroko</h2>
-              <button
-                className="menu-close-btn"
-                type="button"
-                onClick={() => setPanel(null)}
-                aria-label="Tutup"
-              >
-                <Icon name="close" />
-              </button>
-            </div>
-            <form onSubmit={sendMessage}>
-              <label className="sr-only" htmlFor="message">
-                Pesan untuk Shiroko
-              </label>
-              <textarea
-                id="message"
-                ref={inputRef}
-                autoFocus
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Tulis pesanmu, Sensei…"
-                rows={4}
-                maxLength={6000}
-                disabled={loading}
-                onKeyDown={(e) => {
-                  if (
-                    e.key === "Enter" &&
-                    !e.shiftKey &&
-                    !e.nativeEvent.isComposing &&
-                    !window.matchMedia("(pointer: coarse)").matches
-                  ) {
-                    e.preventDefault();
-                    e.currentTarget.form.requestSubmit();
-                  }
-                }}
-              />
-              {error && (
-                <div className="error-banner" role="alert">
-                  {error}
-                  <small>Drafmu tetap tersimpan. Kamu bisa kirim ulang.</small>
-                </div>
-              )}
-              <div className="composer-footer">
-                <span className="composer-hint">Shift+Enter untuk baris baru</span>
-                <button
-                  className="send-button"
-                  type="submit"
-                  disabled={loading || !input.trim()}
-                  aria-label="Kirim pesan"
-                >
-                  <span>Kirim</span>
-                  <Icon name="send" />
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* History Modal */}
       {panel === "history" && (
@@ -548,12 +518,6 @@ export default function App() {
                 <Icon name="close" />
               </button>
             </div>
-            <button
-              type="button"
-              onClick={() => setPanel("compose")}
-            >
-              Balas Shiroko
-            </button>
             <button
               type="button"
               onClick={() => setPanel("history")}
