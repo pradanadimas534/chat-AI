@@ -72,3 +72,4 @@ export function generateFallbackChoices(text) {
     "Ada hal lain yang sedang kamu pikirkan?",
   ];
 }
+

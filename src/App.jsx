@@ -8,6 +8,7 @@ import {
   extractDialogueAndChoices,
   generateFallbackChoices,
 } from "./choices.js";
+import { getRandomStarter } from "./starters.js";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 const makeId = () =>
@@ -17,21 +18,6 @@ const timeLabel = (time) =>
     hour: "2-digit",
     minute: "2-digit",
   }).format(time instanceof Date ? time : new Date(time));
-
-const INITIAL_GREETING = {
-  id: "greeting-0",
-  role: "model",
-  text: "Nn, Sensei. Senang melihatmu. Ada yang ingin kamu bicarakan hari ini?",
-  emotion: "Neutral",
-  greeting: true,
-  time: new Date(),
-};
-
-const INITIAL_CHOICES = [
-  "Bagaimana kabar Abydos hari ini?",
-  "Mau sepedaan atau lari pagi bersamaku?",
-  "Aku cuma ingin mampir melihatmu, Shiroko.",
-];
 
 function Icon({ name }) {
   const paths = {
@@ -203,8 +189,19 @@ export default function App() {
     };
   }, []);
 
-  const [messages, setMessages] = useState([INITIAL_GREETING]);
-  const [choices, setChoices] = useState(INITIAL_CHOICES);
+  // Pick dynamic initial starter based on current time
+  const [initialStarter] = useState(() => getRandomStarter(getSceneTime()));
+  const [messages, setMessages] = useState([
+    {
+      id: initialStarter.id,
+      role: initialStarter.role,
+      text: initialStarter.text,
+      emotion: initialStarter.emotion,
+      greeting: true,
+      time: initialStarter.time,
+    },
+  ]);
+  const [choices, setChoices] = useState(initialStarter.choices);
   const [dialogueDone, setDialogueDone] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -324,8 +321,18 @@ export default function App() {
 
   function resetChat() {
     if (requestRef.current) return;
-    setMessages([INITIAL_GREETING]);
-    setChoices(INITIAL_CHOICES);
+    const newStarter = getRandomStarter(sceneTime);
+    setMessages([
+      {
+        id: newStarter.id,
+        role: newStarter.role,
+        text: newStarter.text,
+        emotion: newStarter.emotion,
+        greeting: true,
+        time: newStarter.time,
+      },
+    ]);
+    setChoices(newStarter.choices);
     setDialogueDone(true);
     setError(null);
     setPanel(null);
@@ -562,7 +569,7 @@ export default function App() {
           <div className="menu__card">
             <h2 id="reset-title">Mulai Cerita Baru?</h2>
             <p style={{ color: "#4c667c", lineHeight: "1.5" }}>
-              Riwayat percakapan saat ini akan dibersihkan dan kembali ke percakapan awal.
+              Riwayat percakapan saat ini akan dibersihkan dan berganti ke suasana cerita baru.
             </p>
             <div className="confirm-actions">
               <button type="button" onClick={() => setPanel(null)}>
