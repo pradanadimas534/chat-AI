@@ -6,7 +6,6 @@ import { paginateDialogue } from "./dialogue.js";
 import { getSceneTime } from "./sceneTime.js";
 import {
   extractDialogueAndChoices,
-  generateFallbackChoices,
   fetchAIChoices,
 } from "./choices.js";
 import { buildOpeningPrompt, getRandomStarter } from "./starters.js";
@@ -244,9 +243,7 @@ export default function App() {
         if (initialChoices.length === 0) {
           // AI did not include choices in the first pass; have AI read what it just outputted
           const aiChoices = await fetchAIChoices(cleanReply, API_BASE, controller.signal);
-          initialChoices = (aiChoices && aiChoices.length > 0)
-            ? aiChoices.slice(0, 2)
-            : generateFallbackChoices(cleanReply).slice(0, 2);
+          initialChoices = (aiChoices || []).slice(0, 2);
         }
 
         setMessages([
@@ -357,9 +354,7 @@ export default function App() {
       if (nextChoices.length === 0) {
         // AI did not include choices in the reply; have AI read what it just outputted
         const aiChoices = await fetchAIChoices(cleanReply, API_BASE, controller.signal);
-        nextChoices = (aiChoices && aiChoices.length > 0)
-          ? aiChoices.slice(0, 2)
-          : generateFallbackChoices(cleanReply).slice(0, 2);
+        nextChoices = (aiChoices || []).slice(0, 2);
       }
 
       setMessages((prev) => [

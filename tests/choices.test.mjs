@@ -2,7 +2,6 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   extractDialogueAndChoices,
-  generateFallbackChoices,
   buildChoicesPrompt,
 } from "../src/choices.js";
 
@@ -47,27 +46,11 @@ Pilihan respon Sensei:
   assert.equal(res2.choices[0], "Terima kasih, Shiroko.");
 });
 
-test("generateFallbackChoices generates relevant choices for seating and AC", () => {
-  const raw = "Duduklah dulu, AC di sini lumayan sejuk kok.";
-  const fallback = generateFallbackChoices(raw);
-  assert.equal(fallback.length, 2);
-  assert.ok(fallback[0].toLowerCase().includes("panas") || fallback[0].toLowerCase().includes("terima kasih"));
-  assert.ok(fallback[1].toLowerCase().includes("duduk"));
-  // Ensure Sensei does not say "Nn"
-  for (const choice of fallback) {
-    assert.ok(!choice.startsWith("Nn"));
-  }
-});
-
-test("extractDialogueAndChoices falls back when no choices section exists", () => {
+test("extractDialogueAndChoices returns empty choices array when no choices section exists", () => {
   const raw = "Nn, Sensei. Sudah sarapan belum?";
   const result = extractDialogueAndChoices(raw);
   assert.equal(result.text, raw);
   assert.equal(result.choices.length, 0);
-
-  const fallback = generateFallbackChoices(raw);
-  assert.equal(fallback.length, 2);
-  assert.ok(fallback[0].toLowerCase().includes("sudah") || fallback[0].toLowerCase().includes("makan"));
 });
 
 test("buildChoicesPrompt instructs AI to read the dialogue output and provide 1-2 choices", () => {
