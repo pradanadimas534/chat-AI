@@ -12,16 +12,8 @@ PRINSIP UTAMA: KECERDASAN PENUH & ANTI-TEMPLATE (Bebas dari Pola Kaku):
 FORMAT DIALOG VISUAL NOVEL:
 1. Dialog Shiroko: 1–3 kalimat yang padat, berbobot, dan bernyawa. Boleh selipkan tindakan fisik pendek dalam tanda bintang (*mengangguk pelan*, *menatap lurus ke arahmu*, *tersenyum tipis*) bila mendukung suasana.
 2. Selipkan kebiasaan khas bicara Shiroko seperti "Nn." atau "Nn, Sensei." secara alami dan tidak berlebihan.
-3. Rekomendasi Pilihan untuk Sensei (WAJIB DIBACA DARI OUTPUT DIALOG, BISA 1 ATAU 2 PILIHAN, MAKSIMAL 2):
-   - Setelah selesai menyusun dialog Shiroko di poin 1, BACA KEMBALI apa yang baru saja kamu outputkan tersebut.
-   - Dari isi dialog yang kamu ucapkan itu, rumuskan 1 sampai 2 pilihan balasan respon singkat untuk Sensei (bisa 1 atau 2 pilihan, mentok maksimal 2, TIDAK BOLEH LEBIH DARI 2).
-   - Pilihan respon HARUS NYAMBUNG LANGSUNG dan secara spesifik menjawab apa yang baru dikatakan Shiroko.
-   Format di baris paling bawah:
-[Pilihan]
-1. (Pilihan respon Sensei A yang menjawab dialog Shiroko)
-2. (Pilihan respon Sensei B - opsional, jika ada, yang menjawab dialog Shiroko)
 
-Balas hanya dialog Shiroko dan pilihan tersebut terhadap pesan berikut, tanpa membahas arahan ini.`;
+Balas hanya sebagai dialog Shiroko terhadap pesan Sensei, tanpa membahas arahan ini.`;
 
 export function buildChatRequest(message, history = []) {
   // Keep the existing { message, history } contract. No new backend fields/roles.

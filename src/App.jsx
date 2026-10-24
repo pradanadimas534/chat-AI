@@ -2,12 +2,8 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { expressionDataset } from "./expressionDataset.js";
 import { selectExpression } from "./selectExpression.js";
 import { buildChatRequest } from "./persona.js";
-import { paginateDialogue } from "./dialogue.js";
+import { paginateDialogue, cleanDialogueText } from "./dialogue.js";
 import { getSceneTime } from "./sceneTime.js";
-import {
-  extractDialogueAndChoices,
-  fetchAIChoices,
-} from "./choices.js";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 const makeId = () =>
@@ -21,6 +17,12 @@ const timeLabel = (time) =>
 function Icon({ name }) {
   const paths = {
     close: <path d="m6 6 12 12M18 6 6 18" />,
+    send: (
+      <>
+        <path d="m21 3-6 18-4-8-8-4 18-6Z" />
+        <path d="m21 3-10 10" />
+      </>
+    ),
     history: (
       <>
         <path d="M3 10a9 9 0 1 1 2 8M3 4v6h6" />
@@ -52,7 +54,7 @@ function Icon({ name }) {
   );
 }
 
-function Dialogue({ message, onFinished, animated, paused, autoPlay }) {
+function Dialogue({ message, onFinished, onReply, animated, paused, autoPlay }) {
   const pages = paginateDialogue(message.text, 80);
   const [page, setPage] = useState(0);
   const [visible, setVisible] = useState(0);
@@ -130,6 +132,8 @@ function Dialogue({ message, onFinished, animated, paused, autoPlay }) {
     } else if (page < pages.length - 1) {
       setVisible(0);
       setPage(page + 1);
+    } else {
+      onReply?.();
     }
   }
 
@@ -137,7 +141,7 @@ function Dialogue({ message, onFinished, animated, paused, autoPlay }) {
     ? "Tampilkan seluruh teks"
     : page < pages.length - 1
       ? "Lanjut"
-      : "Lanjut dialog";
+      : "Balas Shiroko";
 
   return (
     <section
@@ -162,20 +166,18 @@ function Dialogue({ message, onFinished, animated, paused, autoPlay }) {
           className={`dialogue__text ${content.narration ? "narration" : ""}`}
         >
           {complete ? content.text : content.text.slice(0, visible)}
-          <span className="text-cursor">{!complete ? "▎" : ""}</span>
+          <span className="text-cursor">{!complete ? "…" : ""}</span>
         </p>
       </div>
+
       <button
         className="dialogue__next"
         type="button"
-        aria-label={action}
         onClick={advance}
+        aria-label={action}
       >
         <img src="/ui/dialogue-next.svg" alt="" />
       </button>
-      <span className="sr-only" role="status">
-        {content.text}
-      </span>
     </section>
   );
 }
@@ -195,7 +197,7 @@ export default function App() {
   }, []);
 
   const [messages, setMessages] = useState([]);
-  const [choices, setChoices] = useState([]);
+  const [input, setInput] = useState("");
   const [dialogueDone, setDialogueDone] = useState(false);
   const [loading, setLoading] = useState(true);
   const [hideUI, setHideUI] = useState(false);
@@ -208,6 +210,7 @@ export default function App() {
   );
 
   const requestRef = useRef(null);
+  const inputRef = useRef(null);
 
   const lastReply = [...messages].reverse().find((m) => m.role === "model");
   const emotion = lastReply?.emotion || "Neutral";
@@ -219,7 +222,6 @@ export default function App() {
     setDialogueDone(false);
     setError(null);
     setMessages([]);
-    setChoices([]);
 
     const controller = new AbortController();
     requestRef.current = controller;
@@ -236,14 +238,7 @@ export default function App() {
 
       const data = await res.json().catch(() => null);
       if (data && typeof data.reply === "string" && data.reply.trim()) {
-        const parsed = extractDialogueAndChoices(data.reply);
-        const cleanReply = parsed.text || data.reply;
-        let initialChoices = parsed.choices.slice(0, 2);
-        if (initialChoices.length === 0) {
-          // AI did not include choices in the first pass; have AI read what it just outputted
-          const aiChoices = await fetchAIChoices(cleanReply, API_BASE, controller.signal);
-          initialChoices = (aiChoices || []).slice(0, 2);
-        }
+        const cleanReply = cleanDialogueText(data.reply);
 
         setMessages([
           {
@@ -258,7 +253,6 @@ export default function App() {
             time: new Date(),
           },
         ]);
-        setChoices(initialChoices);
         return;
       }
     } catch (err) {
@@ -298,8 +292,17 @@ export default function App() {
 
   useEffect(() => setAssetError(false), [emotion]);
 
-  async function handleSelectChoice(choiceText) {
-    if (loading || requestRef.current) return;
+  useEffect(() => {
+    if (panel === "compose") {
+      setTimeout(() => inputRef.current?.focus(), 60);
+    }
+  }, [panel]);
+
+  async function handleSendMessage(e) {
+    if (e) e.preventDefault();
+    const textToSend = input.trim();
+    if (!textToSend || loading || requestRef.current) return;
+
     const controller = new AbortController();
     requestRef.current = controller;
     const timer = setTimeout(() => controller.abort(), 70000);
@@ -308,15 +311,14 @@ export default function App() {
     setLoading(true);
     setDialogueDone(false);
     setPanel(null);
+    setInput("");
 
     setMessages((prev) => [
       ...prev,
-      { id, role: "user", text: choiceText, time: new Date() },
+      { id, role: "user", text: textToSend, time: new Date() },
     ]);
 
     try {
-      // Preserve full conversation history including greeting,
-      // ensuring Shiroko always has 100% accurate context for what was chosen.
       const history = messages.map((m) => ({
         role: m.role === "model" ? "assistant" : "user",
         content: m.text,
@@ -325,7 +327,7 @@ export default function App() {
       const res = await fetch(`${API_BASE}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(buildChatRequest(choiceText, history)),
+        body: JSON.stringify(buildChatRequest(textToSend, history)),
         signal: controller.signal,
       });
 
@@ -341,17 +343,9 @@ export default function App() {
         );
 
       if (typeof data.reply !== "string" || !data.reply.trim())
-        throw new Error("Balasannya kosong. Coba pilih lagi, ya.");
+        throw new Error("Balasannya kosong. Coba kirim lagi, ya.");
 
-      // Parse dialogue and choices from backend response
-      const parsed = extractDialogueAndChoices(data.reply);
-      const cleanReply = parsed.text || data.reply;
-      let nextChoices = parsed.choices.slice(0, 2);
-      if (nextChoices.length === 0) {
-        // AI did not include choices in the reply; have AI read what it just outputted
-        const aiChoices = await fetchAIChoices(cleanReply, API_BASE, controller.signal);
-        nextChoices = (aiChoices || []).slice(0, 2);
-      }
+      const cleanReply = cleanDialogueText(data.reply);
 
       setMessages((prev) => [
         ...prev,
@@ -363,14 +357,14 @@ export default function App() {
           time: new Date(),
         },
       ]);
-      setChoices(nextChoices);
     } catch (err) {
       setError(
         err.name === "AbortError"
-          ? "Balasan Shiroko memakan waktu terlalu lama. Silakan coba pilih lagi."
+          ? "Balasan Shiroko memakan waktu terlalu lama. Silakan coba kirim lagi."
           : "Pesan belum terkirim: " + err.message,
       );
-      // Revert user message on failure so they can pick again
+      // Restore user input draft on failure
+      setInput(textToSend);
       setMessages((prev) => prev.filter((m) => m.id !== id));
       setDialogueDone(true);
     } finally {
@@ -394,46 +388,46 @@ export default function App() {
         if (hideUI) setHideUI(false);
       }}
     >
-      {/* Dynamic Classroom Background */}
-      <div className="room-background scene__background" aria-hidden="true" />
+      {/* Background with real-time lighting */}
+      <div className="scene__background room-background" aria-hidden="true" />
       <div className="scene-shade" aria-hidden="true" />
 
-      {/* Shiroko Character Portrait with emotion switching */}
-      <div
-        key={lastReply?.id || "idle"}
-        className={`scene__character character-layer ${lastReply ? "reply-bounce" : ""}`}
-      >
+      {/* Shiroko Character Portrait (Centered) */}
+      <div className="scene__character" aria-hidden="true">
         <img
-          key={expression.file}
-          className={`character-portrait ${assetError ? "fallback" : ""}`}
-          src={assetError ? "/shiroko.webp" : expression.file}
-          alt={`Shiroko — ${expression.label.toLowerCase()}`}
+          key={`${emotion}-${lastReply?.id}`}
+          className={`character-portrait ${assetError ? "fallback" : "reply-bounce"}`}
+          src={expression.file}
+          alt={`Ekspresi Shiroko: ${expression.label}`}
           onError={() => setAssetError(true)}
         />
       </div>
 
-      {/* Top Right Scene Controls */}
-      <div className="scene__controls" aria-label="Kontrol cerita">
+      {/* Top Scene Controls */}
+      <div
+        className="scene__controls"
+        role="toolbar"
+        aria-label="Scene controls"
+      >
         <button
           className={`scene__control ${hideUI ? "scene__control--active" : ""}`}
           type="button"
-          title={hideUI ? "Tampilkan UI" : "Sembunyikan UI untuk melihat karakter"}
-          aria-label={hideUI ? "Tampilkan UI" : "Sembunyikan UI"}
           onClick={(e) => {
             e.stopPropagation();
             setHideUI((prev) => !prev);
           }}
+          title={hideUI ? "Tampilkan UI" : "Sembunyikan UI"}
         >
-          {hideUI ? "Lihat" : "UI"}
+          UI
         </button>
         <button
           className={`scene__control ${autoPlay ? "scene__control--active" : ""}`}
           type="button"
-          aria-pressed={autoPlay}
           onClick={(e) => {
             e.stopPropagation();
             setAutoPlay((prev) => !prev);
           }}
+          aria-pressed={autoPlay}
         >
           Auto
         </button>
@@ -461,25 +455,21 @@ export default function App() {
 
       {/* Interactive UI Container (Can be toggled/hidden) */}
       <div className={`ui-interactive-layer ${hideUI ? "ui-hidden" : ""}`}>
-        {/* Recommended Choices for Sensei (Visual Novel Game Style) */}
-        {!loading && dialogueDone && choices.length > 0 && (
+        {/* Reply Prompt Button for Sensei (Visual Novel Game Style) */}
+        {!loading && dialogueDone && (
           <div
             className="choices-container"
-            role="group"
-            aria-label="Pilihan respon Sensei"
             onClick={(e) => e.stopPropagation()}
           >
-            {choices.map((choice, idx) => (
-              <button
-                key={`${idx}-${choice}`}
-                className="choice-button"
-                type="button"
-                onClick={() => handleSelectChoice(choice)}
-              >
-                <img src="/ui/choice-box.png" alt="" />
-                <span>“{choice}”</span>
-              </button>
-            ))}
+            <button
+              className="choice-button"
+              type="button"
+              onClick={() => setPanel("compose")}
+              aria-label="Balas ucapan Shiroko"
+            >
+              <img src="/ui/choice-box.png" alt="" />
+              <span>Balas Shiroko…</span>
+            </button>
           </div>
         )}
 
@@ -519,12 +509,69 @@ export default function App() {
             key={lastReply.id}
             message={lastReply}
             onFinished={() => setDialogueDone(true)}
+            onReply={() => setPanel("compose")}
             animated={animated}
             paused={panel !== null}
             autoPlay={autoPlay}
           />
         ) : null}
       </div>
+
+      {/* Composer Modal (Isi Sendiri) */}
+      {panel === "compose" && (
+        <div
+          className="menu"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="compose-title"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setPanel(null);
+          }}
+        >
+          <div className="menu__card compose__card">
+            <div className="modal-title-row">
+              <h2 id="compose-title">Balas Shiroko</h2>
+              <button
+                className="menu-close-btn"
+                type="button"
+                onClick={() => setPanel(null)}
+                aria-label="Tutup kolom balas"
+              >
+                <Icon name="close" />
+              </button>
+            </div>
+            <form onSubmit={handleSendMessage}>
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    if (input.trim() && !loading) handleSendMessage(e);
+                  }
+                }}
+                placeholder="Tulis balasan untuk Shiroko di sini... (Enter untuk kirim)"
+                rows={3}
+                maxLength={400}
+                disabled={loading}
+              />
+              <div className="composer-footer">
+                <span className="composer-hint">{input.length}/400</span>
+                <button
+                  className="send-button"
+                  type="submit"
+                  disabled={loading || !input.trim()}
+                  aria-label="Kirim pesan"
+                >
+                  <span>Kirim</span>
+                  <Icon name="send" />
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* History Modal */}
       {panel === "history" && (
@@ -604,6 +651,12 @@ export default function App() {
             </div>
             <button
               type="button"
+              onClick={() => setPanel("compose")}
+            >
+              Balas Shiroko
+            </button>
+            <button
+              type="button"
               onClick={() => setPanel("history")}
             >
               Riwayat Obrolan
@@ -646,7 +699,7 @@ export default function App() {
           <div className="menu__card">
             <h2 id="reset-title">Mulai Cerita Baru?</h2>
             <p style={{ color: "#4c667c", lineHeight: "1.5" }}>
-              Riwayat percakapan saat ini akan dibersihkan dan Shiroko akan menyapa dengan adegan baru yang dibuat langsung oleh AI.
+              Riwayat percakapan saat ini akan dibersihkan dan Shiroko akan menyapa dengan obrolan baru.
             </p>
             <div className="confirm-actions">
               <button type="button" onClick={() => setPanel(null)}>

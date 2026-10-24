@@ -623,6 +623,65 @@ button:disabled {
 }
 
 /* ==========================================================================
+   COMPOSE CARD (ISI SENDIRI)
+   ========================================================================== */
+.compose__card {
+  width: min(520px, 100% - 24px);
+}
+
+.compose__card textarea {
+  width: 100%;
+  border: 1px solid #8cb9cb;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #244b6e;
+  padding: 12px 14px;
+  font-size: 15px;
+  line-height: 1.5;
+  resize: vertical;
+  min-height: 100px;
+  outline: none;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.compose__card textarea:focus {
+  border-color: #1480a3;
+  box-shadow: 0 0 0 3px rgba(20, 128, 163, 0.18);
+}
+
+.composer-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.composer-hint {
+  font-size: 12px;
+  color: #6b879a;
+}
+
+.send-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #1480a3 !important;
+  color: #ffffff !important;
+  border: 1px solid #1480a3 !important;
+  padding: 9px 20px !important;
+  border-radius: 4px !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  transition: all 0.16s ease;
+}
+
+.send-button:hover:not(:disabled) {
+  background: #0f6c8b !important;
+  transform: translateY(-1px);
+}
+
+/* ==========================================================================
    HISTORY CARD
    ========================================================================== */
 .history__card {
