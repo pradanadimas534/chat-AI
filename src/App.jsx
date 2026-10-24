@@ -410,6 +410,16 @@ export default function App() {
         aria-label="Scene controls"
       >
         <button
+          className="scene__control"
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setPanel("compose");
+          }}
+        >
+          Balas
+        </button>
+        <button
           className={`scene__control ${hideUI ? "scene__control--active" : ""}`}
           type="button"
           onClick={(e) => {
@@ -455,24 +465,6 @@ export default function App() {
 
       {/* Interactive UI Container (Can be toggled/hidden) */}
       <div className={`ui-interactive-layer ${hideUI ? "ui-hidden" : ""}`}>
-        {/* Reply Prompt Button for Sensei (Visual Novel Game Style) */}
-        {!loading && dialogueDone && (
-          <div
-            className="choices-container"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              className="choice-button"
-              type="button"
-              onClick={() => setPanel("compose")}
-              aria-label="Balas ucapan Shiroko"
-            >
-              <img src="/ui/choice-box.png" alt="" />
-              <span>Balas Shiroko…</span>
-            </button>
-          </div>
-        )}
-
         {/* Error notification banner if request fails */}
         {error && !loading && (
           <div className="scene-error-toast" role="alert">
