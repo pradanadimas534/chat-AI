@@ -18,13 +18,39 @@ test("extractDialogueAndChoices parses [Pilihan] block correctly", () => {
   assert.equal(result.choices[2], "Jangan lupa istirahat ya, Shiroko.");
 });
 
-test("extractDialogueAndChoices falls back when no [Pilihan] is present", () => {
-  const raw = "Nn, Sensei. Selamat datang kembali.";
+test("extractDialogueAndChoices parses alternative header tags", () => {
+  const raw1 = `Nn, Sensei. Rute gurun aman.
+
+Pilihan respon Sensei:
+1. Kerja bagus hari ini, Shiroko!
+2. Mau makan siang bareng sekarang?
+3. Hati-hati di jalan ya.`;
+
+  const res1 = extractDialogueAndChoices(raw1);
+  assert.equal(res1.text, "Nn, Sensei. Rute gurun aman.");
+  assert.equal(res1.choices.length, 3);
+  assert.equal(res1.choices[0], "Kerja bagus hari ini, Shiroko!");
+
+  const raw2 = `Nn. Jangan memaksakan diri, Sensei.
+
+**Pilihan:**
+- "Terima kasih, Shiroko."
+- "Aku tidak apa-apa kok."
+- "Mau temani aku istirahat?"`;
+
+  const res2 = extractDialogueAndChoices(raw2);
+  assert.equal(res2.text, "Nn. Jangan memaksakan diri, Sensei.");
+  assert.equal(res2.choices.length, 3);
+  assert.equal(res2.choices[0], "Terima kasih, Shiroko.");
+});
+
+test("extractDialogueAndChoices falls back when no choices section exists", () => {
+  const raw = "Nn, Sensei. Sudah sarapan belum?";
   const result = extractDialogueAndChoices(raw);
   assert.equal(result.text, raw);
   assert.equal(result.choices.length, 0);
 
   const fallback = generateFallbackChoices(raw);
   assert.equal(fallback.length, 3);
+  assert.ok(fallback[0].toLowerCase().includes("sudah") || fallback[0].toLowerCase().includes("makan"));
 });
-

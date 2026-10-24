@@ -256,12 +256,12 @@ export default function App() {
     ]);
 
     try {
-      const history = messages
-        .filter((m) => !m.greeting)
-        .map((m) => ({
-          role: m.role === "model" ? "assistant" : "user",
-          content: m.text,
-        }));
+      // Preserve full conversation history including greeting,
+      // ensuring Shiroko always has 100% accurate context for what was chosen.
+      const history = messages.map((m) => ({
+        role: m.role === "model" ? "assistant" : "user",
+        content: m.text,
+      }));
 
       const res = await fetch(`${API_BASE}/api/chat`, {
         method: "POST",
