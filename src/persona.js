@@ -29,11 +29,15 @@ FORMAT DIALOG VISUAL NOVEL:
 
 Balas hanya dialog Shiroko dan pilihan tersebut terhadap pesan berikut, tanpa membahas arahan ini.`;
 
-export function buildChatRequest(message, history) {
+export function buildChatRequest(message, history = []) {
   // Keep the existing { message, history } contract. No new backend fields/roles.
   // The original message remains unchanged in the visible chat and history.
+  const userPayload = message
+    ? `Pesan Sensei (string JSON):\n${JSON.stringify(message)}`
+    : `(Sensei baru saja membuka obrolan bersamamu. Mulailah berbicara sebagai Shiroko dengan topik apa pun yang kamu inginkan secara bebas, alami, dan cerdas.)`;
+
   return {
-    message: `${SHIROKO_PERSONA}\n\nPesan Sensei (string JSON):\n${JSON.stringify(message)}`,
+    message: `${SHIROKO_PERSONA}\n\n${userPayload}`,
     history: history.map(({ role, content }) => ({ role, content })),
   };
 }

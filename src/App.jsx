@@ -8,7 +8,6 @@ import {
   extractDialogueAndChoices,
   fetchAIChoices,
 } from "./choices.js";
-import { buildOpeningPrompt, getRandomStarter } from "./starters.js";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 const makeId = () =>
@@ -215,7 +214,7 @@ export default function App() {
   const expression = expressionDataset[emotion] || expressionDataset.Neutral;
 
   // Generate 100% dynamic AI opening scene
-  const generateDynamicOpening = useCallback(async (timeOfDay) => {
+  const generateDynamicOpening = useCallback(async () => {
     setLoading(true);
     setDialogueDone(false);
     setError(null);
@@ -227,11 +226,11 @@ export default function App() {
     const timer = setTimeout(() => controller.abort(), 60000);
 
     try {
-      const openingPrompt = buildOpeningPrompt(timeOfDay);
+      // Let AI determine its own opening dialogue completely freely
       const res = await fetch(`${API_BASE}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(buildChatRequest(openingPrompt, [])),
+        body: JSON.stringify(buildChatRequest(null, [])),
         signal: controller.signal,
       });
 
@@ -263,22 +262,19 @@ export default function App() {
         return;
       }
     } catch (err) {
-      console.warn("Dynamic opening generation fallback:", err);
+      console.warn("Dynamic opening generation error:", err);
     } finally {
       clearTimeout(timer);
       requestRef.current = null;
       setLoading(false);
     }
 
-    // Emergency backup only if API request failed
-    const fallback = getRandomStarter(timeOfDay);
-    setMessages([fallback]);
-    setChoices(fallback.choices);
+    setError("Belum dapat terhubung dengan Shiroko. Silakan muat ulang atau coba lagi.");
   }, []);
 
   // On first load, initiate dynamic opening
   useEffect(() => {
-    generateDynamicOpening(getSceneTime());
+    generateDynamicOpening();
   }, [generateDynamicOpening]);
 
   useEffect(() => {
@@ -387,7 +383,7 @@ export default function App() {
   function resetChat() {
     if (requestRef.current) return;
     setPanel(null);
-    generateDynamicOpening(sceneTime);
+    generateDynamicOpening();
   }
 
   return (
