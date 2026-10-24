@@ -11,7 +11,7 @@ test("getRandomStarter returns a valid starter object across all times", () => {
     assert.ok(starter.emotion);
     assert.equal(starter.greeting, true);
     assert.equal(Array.isArray(starter.choices), true);
-    assert.equal(starter.choices.length, 3);
+    assert.ok(starter.choices.length >= 1 && starter.choices.length <= 2);
     for (const choice of starter.choices) {
       assert.ok(choice.length > 3);
     }

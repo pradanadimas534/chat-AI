@@ -239,10 +239,11 @@ export default function App() {
       if (data && typeof data.reply === "string" && data.reply.trim()) {
         const parsed = extractDialogueAndChoices(data.reply);
         const cleanReply = parsed.text || data.reply;
-        const initialChoices =
+        const initialChoices = (
           parsed.choices.length > 0
             ? parsed.choices
-            : generateFallbackChoices(cleanReply);
+            : generateFallbackChoices(cleanReply)
+        ).slice(0, 2);
 
         setMessages([
           {
@@ -348,10 +349,11 @@ export default function App() {
       // Parse dialogue and choices from backend response
       const parsed = extractDialogueAndChoices(data.reply);
       const cleanReply = parsed.text || data.reply;
-      const nextChoices =
+      const nextChoices = (
         parsed.choices.length > 0
           ? parsed.choices
-          : generateFallbackChoices(cleanReply);
+          : generateFallbackChoices(cleanReply)
+      ).slice(0, 2);
 
       setMessages((prev) => [
         ...prev,

@@ -1,5 +1,5 @@
 // Extraction and contextual generation for Visual Novel dialogue choices.
-// Ensures next choices strictly align with the current conversation topic.
+// Enforces maximum of 2 choices (can be 1 or 2, max 2).
 
 export function extractDialogueAndChoices(rawText) {
   if (typeof rawText !== "string") return { text: "", choices: [] };
@@ -33,11 +33,10 @@ export function extractDialogueAndChoices(rawText) {
       .map((line) => line.replace(/^[\s\d.*\-•#[\]()]+|[“”"]/g, "").trim())
       .filter((line) => line.length > 2 && line.length < 140);
 
-    // If choices were formatted inline (e.g. 1. ... 2. ... 3. ...)
+    // If choices were formatted inline (e.g. 1. ... 2. ...)
     if (
       lines.length < 2 &&
-      /\b1[.)]/.test(choicesPart) &&
-      /\b2[.)]/.test(choicesPart)
+      /\b1[.)]/.test(choicesPart)
     ) {
       lines = choicesPart
         .split(/(?:^|\s+)\d+[.)]\s*/)
@@ -45,10 +44,11 @@ export function extractDialogueAndChoices(rawText) {
         .filter((item) => item.length > 2 && item.length < 140);
     }
 
-    if (lines.length >= 2) {
+    if (lines.length >= 1) {
+      // Maximum 2 choices allowed (1 or 2, max 2)
       return {
         text: textPart || trimmed,
-        choices: lines.slice(0, 3),
+        choices: lines.slice(0, 2),
       };
     }
   }
@@ -72,7 +72,6 @@ export function generateFallbackChoices(text) {
     return [
       "Terima kasih, Shiroko. Di luar memang terik dan panas sekali.",
       "Wah sejuknya... Boleh aku duduk di sampingmu?",
-      "Kamu sendiri sudah minum? Jangan sampai dehidrasi ya.",
     ];
   }
 
@@ -88,7 +87,6 @@ export function generateFallbackChoices(text) {
       return [
         "Sudah kok. Kamu sendiri jangan lupa makan tepat waktu ya.",
         "Belum nih... Mau cari makanan enak bareng di sekitar sini?",
-        "Tadi cuma minum kopi saja, belum sempat sarapan.",
       ];
     }
     if (
@@ -100,7 +98,6 @@ export function generateFallbackChoices(text) {
       return [
         "Sedikit lelah, tapi mengobrol denganmu membuatku segar lagi.",
         "Sensei masih kuat kok! Jangan terlalu cemas.",
-        "Iya, nanti siang aku usahakan tidur sebentar.",
       ];
     }
     if (
@@ -112,13 +109,11 @@ export function generateFallbackChoices(text) {
       return [
         "Boleh! Kapan kita mulai latihannya?",
         "Staminaku tidak sekuat kamu, tapi aku mau coba ikut pelan-pelan.",
-        "Aku akan menyemangatimu dari pinggir jalan saja, haha.",
       ];
     }
     return [
       "Iya, tentu saja. Sensei setuju denganmu.",
       "Bagaimana kalau kita coba cara lain yang lebih santai?",
-      "Menurutmu sendiri sebaiknya bagaimana, Shiroko?",
     ];
   }
 
@@ -135,7 +130,6 @@ export function generateFallbackChoices(text) {
     return [
       "Wah, sudah menempuh berapa kilometer hari ini?",
       "Kapan-kapan ajak aku ikut rute sepedaanmu ya.",
-      "Hebat sekali! Tapi jangan sampai lupa minum air putih.",
     ];
   }
 
@@ -152,7 +146,6 @@ export function generateFallbackChoices(text) {
     return [
       "T-tunggu dulu, kenapa solusinya selalu merampok bank?!",
       "Topeng ski-nya disimpan dulu ya, kita cari cara yang aman!",
-      "Haha, kamu kalau soal rencana taktis selalu bersemangat ya.",
     ];
   }
 
@@ -168,7 +161,6 @@ export function generateFallbackChoices(text) {
     return [
       "Terima kasih sudah begitu perhatian padaku, Shiroko.",
       "Kamu sendiri jangan terlalu memaksakan diri juga, ya.",
-      "Duduk di sampingmu begini rasanya sangat menenangkan.",
     ];
   }
 
@@ -183,7 +175,6 @@ export function generateFallbackChoices(text) {
   ) {
     return [
       "Kebetulan aku juga lapar, mau cari makan bareng?",
-      "Terima kasih minumannya, segar sekali.",
       "Nanti siang Sensei yang traktir ya, pesan apa saja yang kamu mau.",
     ];
   }
@@ -200,7 +191,6 @@ export function generateFallbackChoices(text) {
     return [
       "Haha, dinamika anak-anak Abydos memang selalu hangat dan ramai.",
       "Sensei akan selalu siap membantu kalau Abydos butuh sesuatu.",
-      "Senang melihat kalian semua akrab seperti keluarga.",
     ];
   }
 
@@ -215,7 +205,6 @@ export function generateFallbackChoices(text) {
   ) {
     return [
       "Pemandangan di Abydos memang punya pesona tersendiri ya.",
-      "Udara di luar cukup ekstrem, kita di dalam ruangan saja dulu.",
       "Menghabiskan waktu bersamamu di sini terasa damai sekali.",
     ];
   }
@@ -232,14 +221,12 @@ export function generateFallbackChoices(text) {
     return [
       "Haha, habisnya reaksimu menggemaskan sekali saat tersipu.",
       "Aku sungguh-sungguh kok, kamu sangat berharga untukku.",
-      "Senang melihatmu tersenyum begitu, Shiroko.",
     ];
   }
 
-  // 10. General conversational fallbacks (Never use Shiroko's 'Nn' catchphrase for Sensei!)
+  // 10. General conversational fallbacks (1-2 choices, max 2)
   return [
     "Begitu ya... Senang bisa mengobrol santai denganmu hari ini.",
     "Sensei akan selalu ada di sini kalau kamu ingin bercerita.",
-    "Ada hal lain yang sedang kamu pikirkan akhir-akhir ini?",
   ];
 }
