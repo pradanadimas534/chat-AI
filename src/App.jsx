@@ -29,6 +29,12 @@ function Icon({ name }) {
       </>
     ),
     next: <path d="m9 5 7 7-7 7" />,
+    eye: (
+      <>
+        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+        <circle cx="12" cy="12" r="3" />
+      </>
+    ),
   };
   return (
     <svg
@@ -193,6 +199,7 @@ export default function App() {
   const [choices, setChoices] = useState([]);
   const [dialogueDone, setDialogueDone] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [hideUI, setHideUI] = useState(false);
   const [error, setError] = useState(null);
   const [assetError, setAssetError] = useState(false);
   const [panel, setPanel] = useState(null);
@@ -254,7 +261,6 @@ export default function App() {
         return;
       }
     } catch (err) {
-      // In case of timeout or offline, use a lightweight backup
       console.warn("Dynamic opening generation fallback:", err);
     } finally {
       clearTimeout(timer);
@@ -382,8 +388,11 @@ export default function App() {
 
   return (
     <main
-      className={`scene novel-scene emotion-${emotion} time-${sceneTime}`}
+      className={`scene novel-scene emotion-${emotion} time-${sceneTime} ${hideUI ? "scene--clean" : ""}`}
       aria-label="Visual novel dialogue scene"
+      onClick={() => {
+        if (hideUI) setHideUI(false);
+      }}
     >
       {/* Dynamic Classroom Background */}
       <div className="room-background scene__background" aria-hidden="true" />
@@ -406,91 +415,116 @@ export default function App() {
       {/* Top Right Scene Controls */}
       <div className="scene__controls" aria-label="Kontrol cerita">
         <button
+          className={`scene__control ${hideUI ? "scene__control--active" : ""}`}
+          type="button"
+          title={hideUI ? "Tampilkan UI" : "Sembunyikan UI untuk melihat karakter"}
+          aria-label={hideUI ? "Tampilkan UI" : "Sembunyikan UI"}
+          onClick={(e) => {
+            e.stopPropagation();
+            setHideUI((prev) => !prev);
+          }}
+        >
+          {hideUI ? "Lihat" : "UI"}
+        </button>
+        <button
           className={`scene__control ${autoPlay ? "scene__control--active" : ""}`}
           type="button"
           aria-pressed={autoPlay}
-          onClick={() => setAutoPlay((prev) => !prev)}
+          onClick={(e) => {
+            e.stopPropagation();
+            setAutoPlay((prev) => !prev);
+          }}
         >
           Auto
         </button>
         <button
           className="scene__control"
           type="button"
-          onClick={() => setPanel("history")}
+          onClick={(e) => {
+            e.stopPropagation();
+            setPanel("history");
+          }}
         >
           Riwayat
         </button>
         <button
           className="scene__control"
           type="button"
-          onClick={() => setPanel("menu")}
+          onClick={(e) => {
+            e.stopPropagation();
+            setPanel("menu");
+          }}
         >
           Menu
         </button>
       </div>
 
-      {/* Recommended Choices for Sensei (Visual Novel Game Style) */}
-      {!loading && dialogueDone && choices.length > 0 && (
-        <div
-          className="choices-container"
-          role="group"
-          aria-label="Pilihan respon Sensei"
-        >
-          {choices.map((choice, idx) => (
-            <button
-              key={`${idx}-${choice}`}
-              className="choice-button"
-              type="button"
-              onClick={() => handleSelectChoice(choice)}
-            >
-              <img src="/ui/choice-box.png" alt="" />
-              <span>“{choice}”</span>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Error notification banner if request fails */}
-      {error && !loading && (
-        <div className="scene-error-toast" role="alert">
-          <p>{error}</p>
-          <button
-            type="button"
-            className="toast-retry-btn"
-            onClick={() => setError(null)}
+      {/* Interactive UI Container (Can be toggled/hidden) */}
+      <div className={`ui-interactive-layer ${hideUI ? "ui-hidden" : ""}`}>
+        {/* Recommended Choices for Sensei (Visual Novel Game Style) */}
+        {!loading && dialogueDone && choices.length > 0 && (
+          <div
+            className="choices-container"
+            role="group"
+            aria-label="Pilihan respon Sensei"
+            onClick={(e) => e.stopPropagation()}
           >
-            Tutup
-          </button>
-        </div>
-      )}
-
-      {/* Dialogue Box */}
-      {loading ? (
-        <section className="dialogue waiting" aria-live="polite">
-          <img className="dialogue__panel" src="/ui/dialogue-box.png" alt="" />
-          <div className="dialogue__content">
-            <header className="dialogue__header">
-              <h1>Sunaookami Shiroko</h1>
-              <p>Abydos High School · 対策委員会</p>
-            </header>
-            <img className="dialogue__rule" src="/ui/dialogue-rule.svg" alt="" />
-            <p className="dialogue__text">
-              {messages.length === 0
-                ? "Shiroko sedang berada di ruangan…"
-                : "Shiroko sedang memikirkan balasan…"}
-            </p>
+            {choices.map((choice, idx) => (
+              <button
+                key={`${idx}-${choice}`}
+                className="choice-button"
+                type="button"
+                onClick={() => handleSelectChoice(choice)}
+              >
+                <img src="/ui/choice-box.png" alt="" />
+                <span>“{choice}”</span>
+              </button>
+            ))}
           </div>
-        </section>
-      ) : lastReply ? (
-        <Dialogue
-          key={lastReply.id}
-          message={lastReply}
-          onFinished={() => setDialogueDone(true)}
-          animated={animated}
-          paused={panel !== null}
-          autoPlay={autoPlay}
-        />
-      ) : null}
+        )}
+
+        {/* Error notification banner if request fails */}
+        {error && !loading && (
+          <div className="scene-error-toast" role="alert">
+            <p>{error}</p>
+            <button
+              type="button"
+              className="toast-retry-btn"
+              onClick={() => setError(null)}
+            >
+              Tutup
+            </button>
+          </div>
+        )}
+
+        {/* Dialogue Box */}
+        {loading ? (
+          <section className="dialogue waiting" aria-live="polite">
+            <img className="dialogue__panel" src="/ui/dialogue-box.png" alt="" />
+            <div className="dialogue__content">
+              <header className="dialogue__header">
+                <h1>Sunaookami Shiroko</h1>
+                <p>Abydos High School · 対策委員会</p>
+              </header>
+              <img className="dialogue__rule" src="/ui/dialogue-rule.svg" alt="" />
+              <p className="dialogue__text">
+                {messages.length === 0
+                  ? "Shiroko sedang berada di ruangan…"
+                  : "Shiroko sedang memikirkan balasan…"}
+              </p>
+            </div>
+          </section>
+        ) : lastReply ? (
+          <Dialogue
+            key={lastReply.id}
+            message={lastReply}
+            onFinished={() => setDialogueDone(true)}
+            animated={animated}
+            paused={panel !== null}
+            autoPlay={autoPlay}
+          />
+        ) : null}
+      </div>
 
       {/* History Modal */}
       {panel === "history" && (
