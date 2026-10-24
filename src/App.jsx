@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { expressionDataset } from "./expressionDataset.js";
 import { selectExpression } from "./selectExpression.js";
 import { buildChatRequest } from "./persona.js";
@@ -8,7 +8,7 @@ import {
   extractDialogueAndChoices,
   generateFallbackChoices,
 } from "./choices.js";
-import { getRandomStarter } from "./starters.js";
+import { buildOpeningPrompt, getRandomStarter } from "./starters.js";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "";
 const makeId = () =>
@@ -189,21 +189,10 @@ export default function App() {
     };
   }, []);
 
-  // Pick dynamic initial starter based on current time
-  const [initialStarter] = useState(() => getRandomStarter(getSceneTime()));
-  const [messages, setMessages] = useState([
-    {
-      id: initialStarter.id,
-      role: initialStarter.role,
-      text: initialStarter.text,
-      emotion: initialStarter.emotion,
-      greeting: true,
-      time: initialStarter.time,
-    },
-  ]);
-  const [choices, setChoices] = useState(initialStarter.choices);
-  const [dialogueDone, setDialogueDone] = useState(true);
-  const [loading, setLoading] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [choices, setChoices] = useState([]);
+  const [dialogueDone, setDialogueDone] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [assetError, setAssetError] = useState(false);
   const [panel, setPanel] = useState(null);
@@ -217,6 +206,72 @@ export default function App() {
   const lastReply = [...messages].reverse().find((m) => m.role === "model");
   const emotion = lastReply?.emotion || "Neutral";
   const expression = expressionDataset[emotion] || expressionDataset.Neutral;
+
+  // Generate 100% dynamic AI opening scene
+  const generateDynamicOpening = useCallback(async (timeOfDay) => {
+    setLoading(true);
+    setDialogueDone(false);
+    setError(null);
+    setMessages([]);
+    setChoices([]);
+
+    const controller = new AbortController();
+    requestRef.current = controller;
+    const timer = setTimeout(() => controller.abort(), 60000);
+
+    try {
+      const openingPrompt = buildOpeningPrompt(timeOfDay);
+      const res = await fetch(`${API_BASE}/api/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(buildChatRequest(openingPrompt, [])),
+        signal: controller.signal,
+      });
+
+      const data = await res.json().catch(() => null);
+      if (data && typeof data.reply === "string" && data.reply.trim()) {
+        const parsed = extractDialogueAndChoices(data.reply);
+        const cleanReply = parsed.text || data.reply;
+        const initialChoices =
+          parsed.choices.length > 0
+            ? parsed.choices
+            : generateFallbackChoices(cleanReply);
+
+        setMessages([
+          {
+            id: makeId(),
+            role: "model",
+            text: cleanReply,
+            emotion: selectExpression({
+              emotion: data.emotion,
+              reply: cleanReply,
+            }),
+            greeting: true,
+            time: new Date(),
+          },
+        ]);
+        setChoices(initialChoices);
+        return;
+      }
+    } catch (err) {
+      // In case of timeout or offline, use a lightweight backup
+      console.warn("Dynamic opening generation fallback:", err);
+    } finally {
+      clearTimeout(timer);
+      requestRef.current = null;
+      setLoading(false);
+    }
+
+    // Emergency backup only if API request failed
+    const fallback = getRandomStarter(timeOfDay);
+    setMessages([fallback]);
+    setChoices(fallback.choices);
+  }, []);
+
+  // On first load, initiate dynamic opening
+  useEffect(() => {
+    generateDynamicOpening(getSceneTime());
+  }, [generateDynamicOpening]);
 
   useEffect(() => {
     const img = new Image();
@@ -321,21 +376,8 @@ export default function App() {
 
   function resetChat() {
     if (requestRef.current) return;
-    const newStarter = getRandomStarter(sceneTime);
-    setMessages([
-      {
-        id: newStarter.id,
-        role: newStarter.role,
-        text: newStarter.text,
-        emotion: newStarter.emotion,
-        greeting: true,
-        time: newStarter.time,
-      },
-    ]);
-    setChoices(newStarter.choices);
-    setDialogueDone(true);
-    setError(null);
     setPanel(null);
+    generateDynamicOpening(sceneTime);
   }
 
   return (
@@ -433,8 +475,9 @@ export default function App() {
             </header>
             <img className="dialogue__rule" src="/ui/dialogue-rule.svg" alt="" />
             <p className="dialogue__text">
-              Shiroko sedang memikirkan balasan
-              <span className="loading-dots">…</span>
+              {messages.length === 0
+                ? "Shiroko sedang berada di ruangan…"
+                : "Shiroko sedang memikirkan balasan…"}
             </p>
           </div>
         </section>
@@ -569,7 +612,7 @@ export default function App() {
           <div className="menu__card">
             <h2 id="reset-title">Mulai Cerita Baru?</h2>
             <p style={{ color: "#4c667c", lineHeight: "1.5" }}>
-              Riwayat percakapan saat ini akan dibersihkan dan berganti ke suasana cerita baru.
+              Riwayat percakapan saat ini akan dibersihkan dan Shiroko akan menyapa dengan adegan baru yang dibuat langsung oleh AI.
             </p>
             <div className="confirm-actions">
               <button type="button" onClick={() => setPanel(null)}>

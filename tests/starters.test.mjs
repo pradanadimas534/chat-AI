@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { getRandomStarter } from "../src/starters.js";
+import { getRandomStarter, buildOpeningPrompt } from "../src/starters.js";
 
 test("getRandomStarter returns a valid starter object across all times", () => {
   for (const time of ["morning", "day", "evening", "night", "night-lit"]) {
@@ -16,4 +16,11 @@ test("getRandomStarter returns a valid starter object across all times", () => {
       assert.ok(choice.length > 3);
     }
   }
+});
+
+test("buildOpeningPrompt generates dynamic prompt with time info", () => {
+  const prompt = buildOpeningPrompt("morning");
+  assert.ok(prompt.includes("pagi"));
+  assert.ok(prompt.includes("Sensei"));
+  assert.ok(prompt.includes("Abydos"));
 });

@@ -1,171 +1,52 @@
-// Dynamic starters for Sunaookami Shiroko based on scene time and spontaneous moments.
-// Breaks repetitive templates by providing immersive in-game visual novel opening scenarios.
+// Dynamic scene initiation and emergency fallback for Sunaookami Shiroko.
+// Scene openings are generated live by the AI backend for endless variety.
 
-const STARTERS = {
-  morning: [
-    {
-      text: "Nn, Sensei. Selamat pagi. Aku baru saja selesai jogging 10 kilometer mengelilingi Abydos. Udara pagi masih segar... Sensei sudah sarapan?",
-      emotion: "Soft_Smile",
-      choices: [
-        "Selamat pagi, Shiroko. Jangan langsung duduk, minum air dulu.",
-        "Jam segini sudah selesai 10 km?! Staminamu luar biasa...",
-        "Belum sarapan nih. Mau cari sarapan bareng di sekitar sini?",
-      ],
-    },
-    {
-      text: "Nn. Matahari pagi di gurun mulai naik. Tadi aku mengecek rantai dan ban sepeda road bike-ku, semuanya dalam kondisi prima. Hari ini Sensei ada waktu luang?",
-      emotion: "Neutral_Calm",
-      choices: [
-        "Ada kok. Mau mengajakku sepedaan pagi ini?",
-        "Kondisi sepedamu selalu terawat rapi ya, Shiroko.",
-        "Melihatmu bersemangat di pagi hari begini bikin ikut senang.",
-      ],
-    },
-    {
-      text: "Nn, Sensei... Matamu masih terlihat mengantuk. Tadi malam begadang menyelesaikan dokumen Schale lagi ya?",
-      emotion: "Empathetic_Concern",
-      choices: [
-        "Sedikit lembur semalam... Tapi melihatmu langsung segar lagi.",
-        "Iya nih, dokumen di kantor Schale menumpuk sekali.",
-        "Kelihatan jelas ya? Nanti siang aku sempatkan tidur sebentar.",
-      ],
-    },
-  ],
-  day: [
-    {
-      text: "Nn, Sensei. Di luar panasnya bukan main, pasir gurun sampai terasa membakar. Masuklah ke dalam ruangan, AC-nya sudah kunyalakan.",
-      emotion: "Neutral_Calm",
-      choices: [
-        "Wah, syukurlah... Di luar terik sekali sampai kepalaku pusing.",
-        "Terima kasih, Shiroko. Kamu sendiri sedang apa sendirian di sini?",
-        "Aku sengaja mampir membawakan minuman dingin untuk anak-anak Abydos.",
-      ],
-    },
-    {
-      text: "Nn. Tadi Serika mengeluh soal kas Abydos lagi, lalu Hoshino-senpai malah tertidur pulas di sofa. Suasana ruang klub seperti biasa.",
-      emotion: "Neutral",
-      choices: [
-        "Haha, dinamika anak-anak Abydos memang selalu ramai dan hangat.",
-        "Hoshino tidur lagi? Mau kita jahili pelan-pelan?",
-        "Jangan khawatir soal kas, Sensei akan bantu sebisa mungkin.",
-      ],
-    },
-    {
-      text: "Nn, Sensei. Aku sedang memeriksa peta rute jalanan lama Abydos... Ada beberapa rute menarik yang belum pernah kita lewati.",
-      emotion: "Neutral_Serious",
-      choices: [
-        "Coba kulihat petanya. Rute ke arah reruntuhan gurun?",
-        "Boleh, kapan-kapan temani aku menjelajahi rute itu.",
-        "Jangan sendirian ke area terpencil ya, ajak aku atau teman-teman.",
-      ],
-    },
-  ],
-  evening: [
-    {
-      text: "Nn, Sensei. Sesi latihan sepedaku sore ini baru saja selesai. Langit senja di atas gurun warnanya cantik sekali, merah keemasan... Mau melihatnya dari atap?",
-      emotion: "Soft_Smile",
-      choices: [
-        "Pemandangan senja Abydos dari atap... Ide bagus, ayo naik bersama.",
-        "Kerja bagus untuk latihan sepedanya hari ini, Shiroko.",
-        "Boleh, tapi angin gurun saat sore cukup kencang. Pakai jaketmu ya.",
-      ],
-    },
-    {
-      text: "Nn... Sensei kelihatan lelah sekali setelah seharian beraktivitas. Duduklah di sini, biar kutemani sampai jam istirahatmu selesai.",
-      emotion: "Empathetic_Concern",
-      choices: [
-        "Terima kasih, Shiroko. Duduk di sebelahmu rasanya menenangkan.",
-        "Iya, hari ini tugas dari Schale cukup menguras tenaga.",
-        "Kamu sendiri tidak capek setelah latihan seharian?",
-      ],
-    },
-    {
-      text: "Nn, Sensei. Matahari sudah mulai tenggelam. Sebentar lagi jalanan gurun akan gelap dan suhunya turun drastis. Mau kuantar pulang?",
-      emotion: "Neutral_Calm",
-      choices: [
-        "Nn, diantar murid Abydos yang paling jago bersepeda? Tentu saja mau.",
-        "Tidak usah repot-repot, nanti kamu pulangnya sendirian kemalaman.",
-        "Boleh, sekalian kita jalan santai menikmati angin malam.",
-      ],
-    },
-  ],
-  night: [
-    {
-      text: "Nn, Sensei... Jam segini belum pulang ke kantor Schale? Di luar sudah sepi dan langit gurun Abydos dipenuhi bintang.",
-      emotion: "Neutral_Calm",
-      choices: [
-        "Tadi pekerjaanku baru beres, jadi aku mampir mengecek keadaanmu.",
-        "Langit malam di Abydos memang selalu penuh bintang ya.",
-        "Sensei masih kangen dan ingin ngobrol denganmu sebentar.",
-      ],
-    },
-    {
-      text: "Nn. Malam-malam begini suasana ruang kelas Abydos sunyi sekali. Aku sedang merawat White Fang dan drone patroli... Ada yang ingin kamu bicarakan, Sensei?",
-      emotion: "Neutral_Serious",
-      choices: [
-        "Tidak ada hal gawat kok, cuma ingin menyapamu sebelum tidur.",
-        "Senjata dan dronemu selalu kamu rawat dengan teliti ya.",
-        "Jangan begadang terlalu larut ya, Shiroko. Besok kamu ada latihan.",
-      ],
-    },
-    {
-      text: "Nn, Sensei. Kalau malam hari begini hawa gurun jadi dingin sekali. Jangan sampai masuk angin, ya.",
-      emotion: "Empathetic_Concern",
-      choices: [
-        "Terima kasih perhatiannya, Shiroko. Kamu juga jangan kedinginan.",
-        "Hangat kok kalau berada di dekatmu begini.",
-        "Sensei bawa jaket tebal kok, aman.",
-      ],
-    },
-  ],
-  special: [
-    {
-      text: "Nn, Sensei... Tadi saat patroli di perbatasan distrik, aku menemukan denah bangunan tua bekas brankas bank... topeng ski di tasku juga masih siap.",
-      emotion: "Neutral_Serious",
-      choices: [
-        "T-tunggu dulu, kenapa topeng ski-nya selalu siap di dalam tasmu?!",
-        "Shiroko, kita tidak akan merampok bank... simpan petanya!",
-        "Haha, matamu langsung berbinar-binar kalau urusan rencana taktis ya.",
-      ],
-    },
-    {
-      text: "Nn, Sensei. Tadi Ayane memberitahuku ada kafe baru yang buka di dekat distrik sebelah. Katanya menu minumannya enak... Mau coba ke sana kapan-kapan?",
-      emotion: "Mild_Surprise",
-      choices: [
-        "Wah, ide bagus! Kita jadwalkan akhir pekan ini ya.",
-        "Tentu saja mau. Kamu suka minuman manis juga ternyata?",
-        "Ajak anak-anak Abydos sekalian, biar makin seru.",
-      ],
-    },
-  ],
-};
+export function buildOpeningPrompt(sceneTime) {
+  const now = new Date();
+  const timeStr = new Intl.DateTimeFormat("id-ID", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(now);
 
-let lastPickedIndex = -1;
+  const timeDescriptions = {
+    morning: "pagi hari yang masih sejuk",
+    day: "siang hari yang terik di tengah gurun",
+    evening: "sore hari saat matahari terbenam keemasan di atas gurun",
+    night: "malam hari yang tenang dan dingin di bawah langit bertabur bintang",
+    "night-lit": "malam hari saat lampu ruang kelas Abydos menyala terang",
+  };
+
+  const period = timeDescriptions[sceneTime] || "hari ini";
+
+  return `[ADEGAN PEMBUKA: Sensei baru saja melangkah masuk ke ruang kelas Abydos pada waktu ${period} (sekitar pukul ${timeStr}). Shiroko yang sedang berada di ruangan menyapa Sensei secara spontan dan alami berdasarkan apa yang sedang ia amati, pikirkan, atau lakukan saat ini. Sapa Sensei dan berikan 3 pilihan respon yang relevan untuk Sensei.]`;
+}
+
+// Emergency offline fallback in case the initial AI request fails
+const EMERGENCY_FALLBACKS = [
+  {
+    text: "Nn, Sensei. Senang melihatmu mampir ke Abydos hari ini. Sedang senggang?",
+    emotion: "Soft_Smile",
+    choices: [
+      "Iya, sengaja mampir ingin melihat keadaanmu, Shiroko.",
+      "Baru saja selesai urusan di Schale, jadi langsung ke sini.",
+      "Ada hal menarik apa di Abydos hari ini?",
+    ],
+  },
+  {
+    text: "Nn, Sensei... Langkah kakimu terdengar sampai ke lorong. Ada yang ingin kamu diskusikan?",
+    emotion: "Neutral_Calm",
+    choices: [
+      "Langkah kakiku ketahuan ya? Cuma ingin menyapamu saja.",
+      "Bagaimana kabar anak-anak Satgas Penanggulangan hari ini?",
+      "Nn, cuma rindu mengobrol santai denganmu.",
+    ],
+  },
+];
 
 export function getRandomStarter(timeKey = "day") {
-  const normalizedKey = timeKey.startsWith("time-")
-    ? timeKey.replace("time-", "")
-    : timeKey;
-
-  let pool = STARTERS[normalizedKey];
-  if (!pool || pool.length === 0) {
-    if (normalizedKey.includes("night")) pool = STARTERS.night;
-    else pool = STARTERS.day;
-  }
-
-  // 25% chance to inject a quirky/special character moment
-  const candidatePool = Math.random() < 0.25 ? STARTERS.special : pool;
-
-  // Avoid repeating the exact same starter back-to-back
-  let idx = Math.floor(Math.random() * candidatePool.length);
-  if (candidatePool.length > 1 && idx === lastPickedIndex) {
-    idx = (idx + 1) % candidatePool.length;
-  }
-  lastPickedIndex = idx;
-
-  const item = candidatePool[idx];
+  const item = EMERGENCY_FALLBACKS[Math.floor(Math.random() * EMERGENCY_FALLBACKS.length)];
   return {
-    id: `greeting-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    id: `starter-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     role: "model",
     text: item.text,
     emotion: item.emotion || "Neutral",
