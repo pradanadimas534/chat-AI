@@ -136,10 +136,14 @@ button:disabled {
   position: absolute;
   z-index: -1;
   pointer-events: none;
-  width: 48%;
+  width: min(560px, 55vw);
   height: 135%;
   top: 4%;
-  left: 46%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
   overflow: visible;
   transition: transform 0.3s ease;
 }
@@ -176,13 +180,13 @@ button:disabled {
 
 @keyframes reply-pop {
   0% {
-    transform: translateY(0) scale(1);
+    transform: translateX(-50%) translateY(0) scale(1);
   }
   35% {
-    transform: translateY(-8px) scale(1.015);
+    transform: translateX(-50%) translateY(-8px) scale(1.015);
   }
   100% {
-    transform: translateY(0) scale(1);
+    transform: translateX(-50%) translateY(0) scale(1);
   }
 }
 
@@ -712,11 +716,12 @@ button:disabled {
    RESPONSIVE DESIGN (MOBILE & TABLET REFLOW - NON-OBSTRUCTIVE)
    ========================================================================== */
 @media (max-width: 768px), (aspect-ratio <= 4/3) {
-  /* Shift Shiroko slightly up so face, eyes, ears & halo remain prominent in the top 35% */
+  /* Center Shiroko and position comfortably in the top half */
   .scene__character {
-    width: 82%;
+    width: min(440px, 88vw);
     height: 118%;
-    left: 24%;
+    left: 50%;
+    transform: translateX(-50%);
     top: 2%;
   }
 
@@ -784,10 +789,11 @@ button:disabled {
 
 @media (max-height: 500px) and (orientation: landscape) {
   .scene__character {
-    width: 36%;
+    width: min(340px, 45vw);
     height: 140%;
     top: 2%;
-    left: 54%;
+    left: 50%;
+    transform: translateX(-50%);
   }
 
   .choices-container {
