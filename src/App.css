@@ -180,13 +180,13 @@ button:disabled {
 
 @keyframes reply-pop {
   0% {
-    transform: translateX(-50%) translateY(0) scale(1);
+    transform: translateY(0) scale(1);
   }
   35% {
-    transform: translateX(-50%) translateY(-8px) scale(1.015);
+    transform: translateY(-8px) scale(1.015);
   }
   100% {
-    transform: translateX(-50%) translateY(0) scale(1);
+    transform: translateY(0) scale(1);
   }
 }
 
