@@ -18,7 +18,13 @@ export function buildOpeningPrompt(sceneTime) {
 
   const period = timeDescriptions[sceneTime] || "hari ini";
 
-  return `[ADEGAN PEMBUKA: Sensei baru saja melangkah masuk ke ruang kelas Abydos pada waktu ${period} (sekitar pukul ${timeStr}). Shiroko yang sedang berada di ruangan menyapa Sensei secara spontan dan alami berdasarkan apa yang sedang ia amati, pikirkan, atau lakukan saat ini. Sapa Sensei dan berikan 1 sampai 2 pilihan respon singkat (maksimal 2 pilihan) untuk Sensei.]`;
+  return `[ADEGAN PEMBUKA: Sensei baru saja melangkah masuk ke ruang kelas Abydos pada waktu ${period} (sekitar pukul ${timeStr}). Shiroko yang sedang berada di ruangan menyapa Sensei secara spontan dan alami berdasarkan apa yang sedang ia amati, pikirkan, atau lakukan saat ini.
+1. Tulis sapaan Shiroko (1-3 kalimat).
+2. BACA dialog sapaan yang kamu outputkan tersebut, lalu berikan 1 sampai 2 pilihan respon singkat (maksimal 2 pilihan) untuk Sensei yang langsung merespons sapaan Shiroko tersebut.
+Format di baris akhir:
+[Pilihan]
+1. (Pilihan respon Sensei A)
+2. (Pilihan respon Sensei B - opsional)]`;
 }
 
 // Emergency offline fallback in case the initial AI request fails (1-2 choices)

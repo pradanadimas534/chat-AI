@@ -56,6 +56,45 @@ export function extractDialogueAndChoices(rawText) {
   return { text: trimmed, choices: [] };
 }
 
+export function buildChoicesPrompt(dialogueText) {
+  return `[SISTEM PILIHAN VISUAL NOVEL]
+Berikut adalah dialog yang baru saja diucapkan oleh Shiroko:
+"${dialogueText}"
+
+Tugas: Bacalah kalimat dialog Shiroko di atas dengan teliti. Dari isi perkataan Shiroko tersebut, buatlah 1 sampai 2 pilihan balasan respon singkat untuk Sensei (bisa 1 atau 2 pilihan, mentok maksimal 2) yang NYAMBUNG LANGSUNG dan secara spesifik merespons apa yang baru saja dikatakan Shiroko.
+
+Keluarkan dalam format:
+[Pilihan]
+1. (Respon pilihan Sensei A)
+2. (Respon pilihan Sensei B - opsional)`;
+}
+
+export async function fetchAIChoices(dialogueText, apiBase = "", signal = null) {
+  try {
+    const prompt = buildChoicesPrompt(dialogueText);
+    const res = await fetch(`${apiBase}/api/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: prompt,
+        history: [],
+      }),
+      signal,
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data && typeof data.reply === "string") {
+      const parsed = extractDialogueAndChoices(data.reply);
+      if (parsed.choices.length > 0) {
+        return parsed.choices.slice(0, 2);
+      }
+    }
+  } catch {
+    // Return null on network error, timeout, or abort
+  }
+  return null;
+}
+
 export function generateFallbackChoices(text) {
   const lower = (text || "").toLowerCase();
 

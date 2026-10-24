@@ -1,6 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { extractDialogueAndChoices, generateFallbackChoices } from "../src/choices.js";
+import {
+  extractDialogueAndChoices,
+  generateFallbackChoices,
+  buildChoicesPrompt,
+} from "../src/choices.js";
 
 test("extractDialogueAndChoices parses [Pilihan] block correctly", () => {
   const raw = `Nn, Abydos hari ini cerah sekali. Aku baru selesai sepedaan.
@@ -64,4 +68,13 @@ test("extractDialogueAndChoices falls back when no choices section exists", () =
   const fallback = generateFallbackChoices(raw);
   assert.equal(fallback.length, 2);
   assert.ok(fallback[0].toLowerCase().includes("sudah") || fallback[0].toLowerCase().includes("makan"));
+});
+
+test("buildChoicesPrompt instructs AI to read the dialogue output and provide 1-2 choices", () => {
+  const dialogue = "Duduklah dulu, AC di sini lumayan sejuk kok.";
+  const prompt = buildChoicesPrompt(dialogue);
+  assert.ok(prompt.includes(dialogue));
+  assert.ok(prompt.includes("Bacalah kalimat dialog Shiroko di atas"));
+  assert.ok(prompt.includes("maksimal 2"));
+  assert.ok(prompt.includes("[Pilihan]"));
 });

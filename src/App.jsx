@@ -7,6 +7,7 @@ import { getSceneTime } from "./sceneTime.js";
 import {
   extractDialogueAndChoices,
   generateFallbackChoices,
+  fetchAIChoices,
 } from "./choices.js";
 import { buildOpeningPrompt, getRandomStarter } from "./starters.js";
 
@@ -239,11 +240,14 @@ export default function App() {
       if (data && typeof data.reply === "string" && data.reply.trim()) {
         const parsed = extractDialogueAndChoices(data.reply);
         const cleanReply = parsed.text || data.reply;
-        const initialChoices = (
-          parsed.choices.length > 0
-            ? parsed.choices
-            : generateFallbackChoices(cleanReply)
-        ).slice(0, 2);
+        let initialChoices = parsed.choices.slice(0, 2);
+        if (initialChoices.length === 0) {
+          // AI did not include choices in the first pass; have AI read what it just outputted
+          const aiChoices = await fetchAIChoices(cleanReply, API_BASE, controller.signal);
+          initialChoices = (aiChoices && aiChoices.length > 0)
+            ? aiChoices.slice(0, 2)
+            : generateFallbackChoices(cleanReply).slice(0, 2);
+        }
 
         setMessages([
           {
@@ -349,11 +353,14 @@ export default function App() {
       // Parse dialogue and choices from backend response
       const parsed = extractDialogueAndChoices(data.reply);
       const cleanReply = parsed.text || data.reply;
-      const nextChoices = (
-        parsed.choices.length > 0
-          ? parsed.choices
-          : generateFallbackChoices(cleanReply)
-      ).slice(0, 2);
+      let nextChoices = parsed.choices.slice(0, 2);
+      if (nextChoices.length === 0) {
+        // AI did not include choices in the reply; have AI read what it just outputted
+        const aiChoices = await fetchAIChoices(cleanReply, API_BASE, controller.signal);
+        nextChoices = (aiChoices && aiChoices.length > 0)
+          ? aiChoices.slice(0, 2)
+          : generateFallbackChoices(cleanReply).slice(0, 2);
+      }
 
       setMessages((prev) => [
         ...prev,
