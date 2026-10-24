@@ -59,23 +59,56 @@ export function extractDialogueAndChoices(rawText) {
 export function generateFallbackChoices(text) {
   const lower = (text || "").toLowerCase();
 
-  // If Shiroko asks a direct question
+  // 1. Topic: AC, seating, cool room, shelter from weather
+  if (
+    lower.includes("duduk") ||
+    lower.includes("ac") ||
+    lower.includes("sejuk") ||
+    lower.includes("teduh") ||
+    lower.includes("masuklah") ||
+    lower.includes("kursi") ||
+    lower.includes("sofa")
+  ) {
+    return [
+      "Terima kasih, Shiroko. Di luar memang terik dan panas sekali.",
+      "Wah sejuknya... Boleh aku duduk di sampingmu?",
+      "Kamu sendiri sudah minum? Jangan sampai dehidrasi ya.",
+    ];
+  }
+
+  // 2. Topic: Direct question from Shiroko
   if (text && text.includes("?")) {
-    if (lower.includes("sarapan") || lower.includes("makan") || lower.includes("minum")) {
+    if (
+      lower.includes("sarapan") ||
+      lower.includes("makan") ||
+      lower.includes("minum") ||
+      lower.includes("lapar") ||
+      lower.includes("haus")
+    ) {
       return [
-        "Sudah kok. Kamu sendiri jangan lupa makan ya.",
+        "Sudah kok. Kamu sendiri jangan lupa makan tepat waktu ya.",
         "Belum nih... Mau cari makanan enak bareng di sekitar sini?",
         "Tadi cuma minum kopi saja, belum sempat sarapan.",
       ];
     }
-    if (lower.includes("lelah") || lower.includes("capek") || lower.includes("tidur") || lower.includes("istirahat")) {
+    if (
+      lower.includes("lelah") ||
+      lower.includes("capek") ||
+      lower.includes("tidur") ||
+      lower.includes("istirahat")
+    ) {
       return [
         "Sedikit lelah, tapi mengobrol denganmu membuatku segar lagi.",
-        "Sensei masih kuat kok! Jangan terlalu khawatir.",
+        "Sensei masih kuat kok! Jangan terlalu cemas.",
         "Iya, nanti siang aku usahakan tidur sebentar.",
       ];
     }
-    if (lower.includes("sepeda") || lower.includes("lari") || lower.includes("latihan") || lower.includes("jogging")) {
+    if (
+      lower.includes("sepeda") ||
+      lower.includes("lari") ||
+      lower.includes("latihan") ||
+      lower.includes("jogging")
+    ) {
       return [
         "Boleh! Kapan kita mulai latihannya?",
         "Staminaku tidak sekuat kamu, tapi aku mau coba ikut pelan-pelan.",
@@ -83,32 +116,55 @@ export function generateFallbackChoices(text) {
       ];
     }
     return [
-      "Iya, aku setuju denganmu, Shiroko.",
+      "Iya, tentu saja. Sensei setuju denganmu.",
       "Bagaimana kalau kita coba cara lain yang lebih santai?",
-      "Menurutmu sendiri bagaimana, Shiroko?",
+      "Menurutmu sendiri sebaiknya bagaimana, Shiroko?",
     ];
   }
 
-  // Topic: Cycling, jogging, running
-  if (lower.includes("sepeda") || lower.includes("lari") || lower.includes("jogging") || lower.includes("kilometer")) {
+  // 3. Topic: Cycling, jogging, running, physical stamina
+  if (
+    lower.includes("sepeda") ||
+    lower.includes("road bike") ||
+    lower.includes("lari") ||
+    lower.includes("jogging") ||
+    lower.includes("kilometer") ||
+    lower.includes("km") ||
+    lower.includes("stamina")
+  ) {
     return [
       "Wah, sudah menempuh berapa kilometer hari ini?",
       "Kapan-kapan ajak aku ikut rute sepedaanmu ya.",
-      "Hebat sekali! Tapi jangan sampai lupa minum air, ya.",
+      "Hebat sekali! Tapi jangan sampai lupa minum air putih.",
     ];
   }
 
-  // Topic: Bank, heist, ski mask, weapons, tactical
-  if (lower.includes("rampok") || lower.includes("bank") || lower.includes("topeng") || lower.includes("senjata") || lower.includes("white fang")) {
+  // 4. Topic: Bank, heist, ski mask, weapons, tactical
+  if (
+    lower.includes("rampok") ||
+    lower.includes("bank") ||
+    lower.includes("topeng") ||
+    lower.includes("senjata") ||
+    lower.includes("white fang") ||
+    lower.includes("brankas") ||
+    lower.includes("drone")
+  ) {
     return [
       "T-tunggu dulu, kenapa solusinya selalu merampok bank?!",
-      "Topeng ski-nya disimpan dulu ya, kita cari solusi yang aman!",
+      "Topeng ski-nya disimpan dulu ya, kita cari cara yang aman!",
       "Haha, kamu kalau soal rencana taktis selalu bersemangat ya.",
     ];
   }
 
-  // Topic: Caring, resting, fatigue
-  if (lower.includes("lelah") || lower.includes("capek") || lower.includes("istirahat") || lower.includes("khawatir")) {
+  // 5. Topic: Caring, resting, fatigue, health
+  if (
+    lower.includes("lelah") ||
+    lower.includes("capek") ||
+    lower.includes("istirahat") ||
+    lower.includes("khawatir") ||
+    lower.includes("begadang") ||
+    lower.includes("kesehatan")
+  ) {
     return [
       "Terima kasih sudah begitu perhatian padaku, Shiroko.",
       "Kamu sendiri jangan terlalu memaksakan diri juga, ya.",
@@ -116,8 +172,31 @@ export function generateFallbackChoices(text) {
     ];
   }
 
-  // Topic: Friends / Abydos (Hoshino, Serika, Nonomi, Ayane)
-  if (lower.includes("hoshino") || lower.includes("serika") || lower.includes("ayane") || lower.includes("nonomi") || lower.includes("abydos")) {
+  // 6. Topic: Food / Drinks / Meals
+  if (
+    lower.includes("makan") ||
+    lower.includes("minum") ||
+    lower.includes("lapar") ||
+    lower.includes("haus") ||
+    lower.includes("ramen") ||
+    lower.includes("kafe")
+  ) {
+    return [
+      "Kebetulan aku juga lapar, mau cari makan bareng?",
+      "Terima kasih minumannya, segar sekali.",
+      "Nanti siang Sensei yang traktir ya, pesan apa saja yang kamu mau.",
+    ];
+  }
+
+  // 7. Topic: Friends / Abydos (Hoshino, Serika, Nonomi, Ayane)
+  if (
+    lower.includes("hoshino") ||
+    lower.includes("serika") ||
+    lower.includes("ayane") ||
+    lower.includes("nonomi") ||
+    lower.includes("abydos") ||
+    lower.includes("satgas")
+  ) {
     return [
       "Haha, dinamika anak-anak Abydos memang selalu hangat dan ramai.",
       "Sensei akan selalu siap membantu kalau Abydos butuh sesuatu.",
@@ -125,8 +204,15 @@ export function generateFallbackChoices(text) {
     ];
   }
 
-  // Topic: Weather, desert, sunset, stars
-  if (lower.includes("panas") || lower.includes("senja") || lower.includes("bintang") || lower.includes("malam") || lower.includes("gurun")) {
+  // 8. Topic: Weather, desert, sunset, stars, heat
+  if (
+    lower.includes("panas") ||
+    lower.includes("senja") ||
+    lower.includes("bintang") ||
+    lower.includes("malam") ||
+    lower.includes("gurun") ||
+    lower.includes("terik")
+  ) {
     return [
       "Pemandangan di Abydos memang punya pesona tersendiri ya.",
       "Udara di luar cukup ekstrem, kita di dalam ruangan saja dulu.",
@@ -134,10 +220,26 @@ export function generateFallbackChoices(text) {
     ];
   }
 
-  // General conversational fallbacks
+  // 9. Topic: Teasing, praise, blushing
+  if (
+    lower.includes("menggoda") ||
+    lower.includes("bicara apa") ||
+    lower.includes("bikin malu") ||
+    lower.includes("tersipu") ||
+    lower.includes("cantik") ||
+    lower.includes("manis")
+  ) {
+    return [
+      "Haha, habisnya reaksimu menggemaskan sekali saat tersipu.",
+      "Aku sungguh-sungguh kok, kamu sangat berharga untukku.",
+      "Senang melihatmu tersenyum begitu, Shiroko.",
+    ];
+  }
+
+  // 10. General conversational fallbacks (Never use Shiroko's 'Nn' catchphrase for Sensei!)
   return [
-    "Nn, begitu ya. Ceritakan lebih banyak, Shiroko.",
-    "Senang sekali bisa mengobrol santai denganmu hari ini.",
-    "Aku selalu senang mendengarkan ceritamu, Shiroko.",
+    "Begitu ya... Senang bisa mengobrol santai denganmu hari ini.",
+    "Sensei akan selalu ada di sini kalau kamu ingin bercerita.",
+    "Ada hal lain yang sedang kamu pikirkan akhir-akhir ini?",
   ];
 }
