@@ -2,27 +2,30 @@
 
 :root {
   --font-sans: "Noto Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --bg-deep: #0b1926;
-  --surface-hud: rgba(11, 25, 38, 0.90);
-  --surface-hud-solid: #0f2132;
-  --surface-elevated: #152b40;
-  --border-subtle: rgba(154, 187, 208, 0.26);
-  --border-accent: #38d6f5;
-  --text-primary: #f4f9fc;
-  --text-secondary: #9abbd0;
-  --accent-cyan: #38d6f5;
-  --accent-primary: #106b89;
-  --accent-primary-hover: #0c566e;
-  --danger-text: #ff8a9b;
-  --danger-border: rgba(255, 138, 155, 0.45);
-  --danger-bg: rgba(180, 40, 62, 0.22);
+  --momo-pink: #cc3e5e;
+  --momo-pink-hover: #b23250;
+  --momo-pink-soft: #fdeef2;
+  --momo-rail: #5e7080;
+  --momo-rail-active: #4c5d6d;
+  --momo-sidebar: #f3f5f7;
+  --momo-contact-active: #e7eef5;
+  --momo-bubble-student: #465568;
+  --momo-bubble-sensei: #2b6cb0;
+  --momo-unread: #d9381e;
+  --surface-white: #ffffff;
+  --bg-stage: #dce3ea;
+  --border-light: #d5dde5;
+  --border-strong: #9fb0c0;
+  --text-primary: #26323f;
+  --text-secondary: #52606d;
+  --text-white: #ffffff;
 
   font-family: var(--font-sans);
   color: var(--text-primary);
-  background: var(--bg-deep);
+  background: var(--bg-stage);
   font-synthesis: none;
   font-weight: 400;
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 *,
@@ -35,9 +38,8 @@
 
 body {
   margin: 0;
-  background: var(--bg-deep);
-  overflow: hidden;
-  user-select: none;
+  background: var(--bg-stage);
+  color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -56,614 +58,663 @@ button {
 }
 
 button:focus-visible,
-textarea:focus-visible {
-  outline: 2px solid var(--accent-cyan);
+textarea:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--momo-pink);
   outline-offset: 2px;
 }
 
 button:disabled {
   cursor: not-allowed;
-  opacity: 0.48;
+  opacity: 0.5;
 }
 
-/* ==========================================================================
-   SCENE & DYNAMIC TIME-OF-DAY BACKGROUND
-   ========================================================================== */
-.scene {
-  isolation: isolate;
-  background: var(--bg-deep);
-  width: 100vw;
+.momotalk-stage {
+  width: 100%;
   height: 100dvh;
   height: var(--viewport-height, 100dvh);
-  position: relative;
-  overflow: hidden;
-}
-
-.scene__background,
-.room-background {
-  position: absolute;
-  inset: 0;
-  z-index: -3;
-  width: 100%;
-  height: 100%;
-  background: var(--room-image, url("/backgrounds/abydos-day.png")) center center / cover no-repeat;
-  filter: var(--room-light, none);
-  transition: filter 2s ease;
-}
-
-.room-background::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: var(--room-tint, transparent);
-  mix-blend-mode: soft-light;
-  transition: background 2s ease;
-}
-
-.time-morning {
-  --room-image: url("/backgrounds/abydos-day.png");
-  --room-light: none;
-  --room-tint: linear-gradient(120deg, #ffe6a833, transparent 70%);
-}
-
-.time-day {
-  --room-image: url("/backgrounds/abydos-day.png");
-  --room-light: none;
-  --room-tint: transparent;
-}
-
-.time-evening {
-  --room-image: url("/backgrounds/abydos-day.png");
-  --room-light: brightness(0.95) sepia(0.12);
-  --room-tint: linear-gradient(120deg, #ffab6466, #f59b7733 60%, transparent);
-}
-
-.time-night-lit {
-  --room-image: url("/backgrounds/abydos-night-lit.png");
-  --room-light: none;
-  --room-tint: transparent;
-}
-
-.time-night {
-  --room-image: url("/backgrounds/abydos-night.png");
-  --room-light: none;
-  --room-tint: transparent;
-}
-
-.scene-shade {
-  position: absolute;
-  inset: 0;
-  z-index: -2;
-  background: linear-gradient(
-    180deg,
-    rgba(8, 20, 32, 0.32) 0%,
-    transparent 30%,
-    rgba(8, 20, 32, 0.18) 62%,
-    rgba(8, 20, 32, 0.72) 100%
-  );
-  pointer-events: none;
-}
-
-/* ==========================================================================
-   CHARACTER PORTRAIT (CENTERED)
-   ========================================================================== */
-.scene__character {
-  position: absolute;
-  z-index: -1;
-  pointer-events: none;
-  width: min(560px, 54vw);
-  height: 132%;
-  top: 4%;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  overflow: visible;
-}
-
-.character-portrait {
-  object-fit: contain;
-  width: 100%;
-  height: 100%;
-  filter: drop-shadow(0 12px 28px rgba(6, 16, 28, 0.5));
-}
-
-.character-portrait.fallback {
-  width: auto;
-  height: 60%;
-  top: 15%;
-  border-radius: 12px;
-}
-
-.reply-bounce {
-  animation: reply-pop 0.36s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-@keyframes reply-pop {
-  0% {
-    transform: translateY(0) scale(1);
-  }
-  35% {
-    transform: translateY(-7px) scale(1.012);
-  }
-  100% {
-    transform: translateY(0) scale(1);
-  }
-}
-
-/* ==========================================================================
-   TOP SCENE CONTROLS (COMPACT SETTINGS BUTTON)
-   ========================================================================== */
-.scene__controls {
   display: flex;
   align-items: center;
-  position: absolute;
-  top: max(16px, env(safe-area-inset-top));
-  right: max(20px, env(safe-area-inset-right));
-  z-index: 25;
+  justify-content: center;
+  padding: 20px;
+  background: var(--bg-stage);
+}
+
+.momotalk-window {
+  width: min(1020px, 100%);
+  height: min(680px, 100%);
+  background: var(--surface-white);
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 18px 48px rgba(24, 38, 54, 0.22);
+  border: 1px solid var(--border-strong);
+}
+
+.momotalk-titlebar {
+  background: var(--momo-pink);
+  color: var(--text-white);
+  min-height: 54px;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.momotalk-titlebar__left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.momotalk-peach {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-white);
+}
+
+.momotalk-peach svg {
+  width: 24px;
+  height: 24px;
+}
+
+.momotalk-titlebar h1 {
+  font-size: clamp(19px, 2.2vw, 22px);
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: var(--text-white);
+}
+
+.momotalk-help-badge {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  background: var(--surface-white);
+  color: var(--momo-pink);
+  font-size: 14px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 2px;
+  transition: transform 0.15s ease;
+}
+
+.momotalk-help-badge:hover {
+  transform: scale(1.06);
+}
+
+.momotalk-help-badge:focus-visible,
+.settings-trigger:focus-visible {
+  outline: 2px solid var(--surface-white);
+  outline-offset: 2px;
 }
 
 .settings-trigger {
   width: 44px;
   height: 44px;
-  background: var(--surface-hud);
-  border: 1px solid var(--border-subtle);
   border-radius: 8px;
-  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  color: var(--text-white);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease, transform 0.16s ease;
-  box-shadow: 0 6px 16px rgba(5, 14, 24, 0.35);
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
-.settings-trigger:hover {
-  background: var(--surface-elevated);
-  border-color: var(--accent-cyan);
-  color: var(--accent-cyan);
-  transform: translateY(-1px);
-}
-
-.settings-trigger:active {
-  transform: translateY(0);
-}
-
+.settings-trigger:hover,
 .settings-trigger--active {
-  background: var(--surface-elevated);
-  border-color: var(--accent-cyan);
-  color: var(--accent-cyan);
+  background: var(--surface-white);
+  color: var(--momo-pink);
 }
 
-/* ==========================================================================
-   UI INTERACTIVE LAYER & ERROR TOAST
-   ========================================================================== */
-.ui-interactive-layer {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
+.momotalk-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 64px 290px 1fr;
+  background: var(--surface-white);
+}
+
+.momotalk-rail {
+  background: var(--momo-rail);
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  transition: opacity 0.25s ease, transform 0.25s ease;
+  align-items: center;
+  padding-top: 8px;
 }
 
-.ui-interactive-layer.ui-hidden {
-  opacity: 0;
-  transform: translateY(10px);
-  pointer-events: none !important;
+.momotalk-rail__item {
+  width: 100%;
+  height: 62px;
+  color: rgba(255, 255, 255, 0.62);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
 }
 
-.scene-error-toast {
+.momotalk-rail__item svg {
+  width: 24px;
+  height: 24px;
+}
+
+.momotalk-rail__item--active {
+  background: var(--momo-rail-active);
+  color: var(--text-white);
+}
+
+.momotalk-rail__badge {
   position: absolute;
-  top: 76px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(520px, calc(100vw - 32px));
-  background: var(--surface-hud-solid);
-  border: 1px solid var(--danger-border);
-  border-left: 4px solid var(--danger-text);
-  border-radius: 6px;
-  padding: 12px 16px;
-  color: var(--text-primary);
-  font-size: 14px;
+  top: 12px;
+  right: 12px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: var(--momo-unread);
+  color: var(--text-white);
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.momotalk-sidebar {
+  background: var(--momo-sidebar);
+  border-right: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.momotalk-sidebar__toolbar {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-light);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
-  z-index: 30;
-  pointer-events: auto;
+  gap: 8px;
 }
 
-.toast-retry-btn {
-  min-height: 36px;
-  padding: 6px 14px;
-  background: var(--danger-bg);
-  color: var(--danger-text);
-  border: 1px solid var(--danger-border);
+.momotalk-sidebar__count {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.momotalk-sidebar__filters {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.filter-pill {
+  background: var(--surface-white);
+  border: 1px solid var(--border-light);
   border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.filter-icon {
+  width: 30px;
+  height: 28px;
+  background: var(--surface-white);
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary);
+}
+
+.momotalk-contact-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.momotalk-contact {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.momotalk-contact--active {
+  background: var(--momo-contact-active);
+  border-left: 4px solid var(--momo-pink);
+}
+
+.momotalk-contact__info {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.momotalk-contact__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.momotalk-contact__row strong {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.momotalk-contact__school {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--momo-pink);
+  background: var(--surface-white);
+  border: 1px solid var(--border-light);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.momotalk-contact__preview {
   font-size: 13px;
-  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.momotalk-unread-badge {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: var(--momo-unread);
+  color: var(--text-white);
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
 }
 
-.toast-retry-btn:hover {
-  background: rgba(180, 40, 62, 0.36);
-}
-
-/* ==========================================================================
-   CUSTOM VISUAL NOVEL DIALOGUE & REPLY DOCK
-   ========================================================================== */
-.dialogue-dock {
-  width: 100%;
+.momotalk-chat-pane {
+  background: var(--surface-white);
   display: flex;
-  justify-content: center;
-  padding: 0 20px max(18px, env(safe-area-inset-bottom));
-  pointer-events: none;
-  z-index: 10;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
 }
 
-.dialogue {
-  width: min(920px, 100%);
-  background: var(--surface-hud);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--border-subtle);
-  border-top: 2px solid var(--accent-cyan);
-  border-radius: 8px;
-  box-shadow: 0 16px 40px rgba(4, 12, 22, 0.6);
-  pointer-events: auto;
-  cursor: pointer;
-  transition: border-color 0.2s ease;
-}
-
-.dialogue--reply,
-.dialogue.waiting {
-  cursor: default;
-}
-
-.dialogue__content {
-  padding: 18px 24px 16px;
+.momotalk-feed {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 20px 22px;
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.dialogue__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
+.momotalk-empty {
+  margin: auto;
+  max-width: 380px;
+  background: var(--momo-sidebar);
+  border: 1px solid var(--border-light);
+  border-top: 3px solid var(--momo-pink);
+  border-radius: 8px;
+  padding: 18px 20px;
+  text-align: center;
 }
 
-.dialogue__speaker {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.dialogue__accent-bar {
-  width: 4px;
-  height: 18px;
-  background: var(--accent-cyan);
-  border-radius: 2px;
-  align-self: center;
-}
-
-.dialogue__accent-bar--sensei {
-  background: #f4f9fc;
-}
-
-.dialogue__header h1 {
-  font-family: var(--font-sans);
-  font-size: clamp(18px, 2vw, 22px);
+.momotalk-empty__title {
+  font-size: 16px;
   font-weight: 700;
   color: var(--text-primary);
-  letter-spacing: -0.2px;
+  margin-bottom: 6px;
 }
 
-.dialogue__affiliation {
+.momotalk-empty__desc {
+  font-size: 14px;
+  line-height: 1.55;
   color: var(--text-secondary);
-  font-size: clamp(12px, 1.3vw, 14px);
-  font-weight: 600;
 }
 
-.dialogue__meta {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  background: rgba(21, 43, 64, 0.85);
-  border: 1px solid var(--border-subtle);
-  padding: 2px 10px;
-  border-radius: 4px;
+.momo-msg {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.dialogue__divider {
-  width: 100%;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    rgba(56, 214, 245, 0.65) 0%,
-    rgba(154, 187, 208, 0.22) 55%,
-    transparent 100%
-  );
+.momo-msg--student {
+  align-items: flex-start;
 }
 
-.dialogue__text {
-  font-family: var(--font-sans);
-  font-size: clamp(15px, 1.55vw, 18px);
-  font-weight: 400;
-  line-height: 1.65;
+.momo-msg--sensei {
+  align-items: flex-end;
+  margin-top: 4px;
+}
+
+.momo-msg__header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding-left: 2px;
+  margin-top: 4px;
+}
+
+.momo-msg__name {
+  font-size: 15px;
+  font-weight: 700;
   color: var(--text-primary);
-  min-height: 58px;
-  max-height: clamp(84px, 18vh, 140px);
-  overflow-y: auto;
-  overscroll-behavior: contain;
+}
+
+.momo-msg__time {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.momo-bubble {
+  position: relative;
+  max-width: min(460px, 84%);
+  padding: 10px 14px;
+  border-radius: 8px;
+  color: var(--text-white);
+  box-shadow: 0 2px 4px rgba(24, 38, 54, 0.08);
+}
+
+.momo-bubble--student {
+  background: var(--momo-bubble-student);
+}
+
+.momo-bubble--student::before {
+  content: "";
+  position: absolute;
+  top: 12px;
+  left: -6px;
+  border-width: 5px 6px 5px 0;
+  border-style: solid;
+  border-color: transparent var(--momo-bubble-student) transparent transparent;
+}
+
+.momo-bubble--sensei {
+  background: var(--momo-bubble-sensei);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.momo-bubble--sensei::after {
+  content: "";
+  position: absolute;
+  top: 12px;
+  right: -6px;
+  border-width: 5px 0 5px 6px;
+  border-style: solid;
+  border-color: transparent transparent transparent var(--momo-bubble-sensei);
+}
+
+.momo-bubble__text {
+  font-size: 15px;
+  line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;
 }
 
-.dialogue__text.narration {
-  font-style: italic;
-  color: #cfe6f5;
+.momo-bubble__time-inline {
+  font-size: 11px;
+  color: var(--text-white);
+  opacity: 0.9;
+  align-self: flex-end;
 }
 
-.waiting .dialogue__text {
-  color: var(--text-secondary);
-  font-style: italic;
-  display: flex;
-  align-items: center;
+.momo-bubble--typing .momo-bubble__text {
+  letter-spacing: 3px;
+  font-weight: 700;
 }
 
-.text-cursor {
-  color: var(--accent-cyan);
-  margin-left: 3px;
-  font-size: 0.9em;
-}
-
-.dialogue__footer {
+.momotalk-error {
+  margin: 0 18px 10px;
+  padding: 10px 14px;
+  background: var(--momo-pink-soft);
+  border: 1px solid var(--momo-pink);
+  border-left: 4px solid var(--momo-pink);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 13px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding-top: 4px;
 }
 
-.dialogue__hint {
+.momotalk-error__close {
+  min-height: 36px;
+  padding: 6px 12px;
+  background: var(--momo-pink);
+  color: var(--text-white);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.momotalk-composer {
+  border-top: 1px solid var(--border-light);
+  background: var(--momo-sidebar);
+  padding: 12px 16px max(12px, env(safe-area-inset-bottom));
+}
+
+.composer-form {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.composer-input {
+  flex: 1;
+  background: var(--surface-white);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--text-primary);
+  resize: none;
+  min-height: 44px;
+  max-height: 96px;
+}
+
+.composer-input:focus {
+  border-color: var(--momo-pink);
+}
+
+.composer-input::placeholder {
+  color: var(--text-secondary);
+}
+
+.composer-send {
+  min-height: 44px;
+  padding: 8px 18px;
+  border-radius: 8px;
+  background: var(--momo-pink);
+  color: var(--text-white);
+  font-size: 14px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+}
+
+.composer-send:hover:not(:disabled) {
+  background: var(--momo-pink-hover);
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(24, 34, 46, 0.55);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+.modal-card {
+  width: min(420px, 100%);
+  max-height: min(85dvh, 640px);
+  overflow-y: auto;
+  background: var(--surface-white);
+  color: var(--text-primary);
+  border: 1px solid var(--border-strong);
+  border-top: 5px solid var(--momo-pink);
+  border-radius: 10px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 20px 48px rgba(24, 34, 46, 0.28);
+}
+
+.modal-card--wide {
+  width: min(520px, 100%);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.modal-header h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.modal-close-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: var(--momo-sidebar);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary);
+  display: grid;
+  place-items: center;
+}
+
+.modal-close-btn:hover {
+  background: var(--momo-pink);
+  border-color: var(--momo-pink);
+  color: var(--text-white);
+}
+
+.modal-menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.modal-menu-item {
+  min-height: 46px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: var(--momo-sidebar);
+  border: 1px solid var(--border-light);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modal-menu-item:hover {
+  background: var(--momo-pink-soft);
+  border-color: var(--momo-pink);
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 48vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.history-empty {
+  color: var(--text-secondary);
+  font-size: 14px;
+  text-align: center;
+  padding: 16px 0;
+}
+
+.history-item {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+  background: var(--momo-sidebar);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.history-item--ai {
+  border-left: 4px solid var(--momo-bubble-student);
+}
+
+.history-item--user {
+  border-left: 4px solid var(--momo-bubble-sensei);
+}
+
+.history-item header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
   font-size: 12px;
   color: var(--text-secondary);
 }
 
-.dialogue__next {
-  min-height: 38px;
-  padding: 6px 14px;
-  background: var(--surface-elevated);
-  border: 1px solid var(--border-subtle);
-  border-radius: 4px;
-  color: var(--accent-cyan);
+.history-item header strong {
+  color: var(--text-primary);
   font-size: 13px;
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  transition: background 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
 }
 
-.dialogue__next:hover {
-  background: var(--accent-primary);
-  border-color: var(--accent-cyan);
+.history-item p {
   color: var(--text-primary);
-  transform: translateX(2px);
-}
-
-/* ==========================================================================
-   IN-DIALOGUE REPLY FORM (SENSEI)
-   ========================================================================== */
-.dialogue__reply-form {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: 100%;
-}
-
-.dialogue__reply-input {
-  width: 100%;
-  background: rgba(7, 16, 26, 0.68);
-  border: 1px solid var(--border-subtle);
-  border-radius: 6px;
-  color: var(--text-primary);
-  font-family: var(--font-sans);
-  font-size: clamp(14px, 1.5vw, 17px);
-  padding: 10px 14px;
-  resize: none;
-  min-height: 64px;
-  max-height: 110px;
-  line-height: 1.55;
-  transition: border-color 0.16s ease, background 0.16s ease;
-}
-
-.dialogue__reply-input:focus {
-  outline: none;
-  border-color: var(--accent-cyan);
-  background: rgba(7, 16, 26, 0.88);
-}
-
-.dialogue__reply-input::placeholder {
-  color: var(--text-secondary);
-  opacity: 0.78;
-}
-
-.dialogue__reply-actions {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.dialogue__cancel-btn {
-  min-height: 44px;
-  padding: 8px 16px;
-  color: var(--text-secondary);
-  background: transparent;
-  border: 1px solid var(--border-subtle);
-  border-radius: 4px;
-  font-size: 13px;
-  font-weight: 600;
-  transition: color 0.16s ease, border-color 0.16s ease, background 0.16s ease;
-}
-
-.dialogue__cancel-btn:hover {
-  color: var(--text-primary);
-  border-color: var(--text-secondary);
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.dialogue__send-btn {
-  min-height: 44px;
-  padding: 8px 20px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--accent-primary);
-  color: var(--text-primary);
-  border: 1px solid var(--accent-cyan);
-  border-radius: 4px;
-  font-family: var(--font-sans);
-  font-weight: 600;
-  font-size: 14px;
-  transition: background 0.16s ease, transform 0.16s ease;
-}
-
-.dialogue__send-btn:hover:not(:disabled) {
-  background: var(--accent-primary-hover);
-  transform: translateY(-1px);
-}
-
-/* ==========================================================================
-   MODAL / MENU CARDS (UNIFIED SCHALE HUD STYLE)
-   ========================================================================== */
-.menu {
-  z-index: 100;
-  background: rgba(6, 15, 24, 0.78);
-  place-items: center;
-  display: grid;
-  position: fixed;
-  inset: 0;
-  padding: 16px;
-}
-
-.menu__card {
-  color: var(--text-primary);
-  background: var(--surface-hud-solid);
-  border: 1px solid var(--border-subtle);
-  border-top: 2px solid var(--accent-cyan);
-  gap: 12px;
-  width: min(440px, 100%);
-  padding: 24px;
-  display: grid;
-  box-shadow: 0 20px 50px rgba(0, 8, 18, 0.65);
-  max-height: min(85dvh, 680px);
-  overflow-y: auto;
-  border-radius: 8px;
-}
-
-.modal-title-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-.modal-title-row h2,
-.menu__card h2 {
-  font-family: var(--font-sans);
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.modal-description {
-  color: var(--text-secondary);
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-.menu-close-btn {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 4px;
-  border: 1px solid var(--border-subtle);
-  background: var(--surface-elevated);
-  color: var(--text-primary);
-  transition: background 0.15s ease, border-color 0.15s ease;
-}
-
-.menu-close-btn:hover {
-  background: var(--accent-primary);
-  border-color: var(--accent-cyan);
-}
-
-.menu__card button:not(.menu-close-btn) {
-  min-height: 44px;
-  background: var(--surface-elevated);
-  border: 1px solid var(--border-subtle);
-  padding: 10px 16px;
-  font-family: var(--font-sans);
-  font-weight: 600;
-  font-size: 14px;
-  color: var(--text-primary);
-  border-radius: 4px;
-  transition: background 0.16s ease, border-color 0.16s ease;
-  text-align: left;
-}
-
-.menu__card button:not(.menu-close-btn):hover {
-  background: #1c3852;
-  border-color: var(--accent-cyan);
-}
-
-.menu__card .menu__item-btn {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.menu__card .resume-btn {
-  background: var(--accent-primary);
-  border-color: var(--accent-cyan);
-  text-align: center;
-  font-weight: 700;
-}
-
-.menu__card .resume-btn:hover {
-  background: var(--accent-primary-hover);
-}
-
-/* ==========================================================================
-   ABOUT AI CARD
-   ========================================================================== */
-.about__card {
-  width: min(460px, 100%);
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .about-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 4px 0;
+  gap: 10px;
 }
 
 .about-item {
-  background: var(--surface-elevated);
-  border: 1px solid var(--border-subtle);
-  border-radius: 6px;
+  background: var(--momo-sidebar);
+  border: 1px solid var(--border-light);
+  border-left: 4px solid var(--momo-pink);
+  border-radius: 8px;
   padding: 12px 14px;
   display: flex;
   flex-direction: column;
@@ -672,190 +723,96 @@ button:disabled {
 
 .about-item dt {
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-secondary);
 }
 
 .about-item dd {
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-primary);
   word-break: break-word;
 }
 
 .about-item a {
-  color: var(--accent-cyan);
-  text-decoration: none;
-}
-
-.about-item a:hover {
+  color: var(--momo-bubble-sensei);
   text-decoration: underline;
 }
 
-/* ==========================================================================
-   HISTORY CARD
-   ========================================================================== */
-.history__card {
-  width: min(560px, 100%);
-}
-
-.message-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  max-height: 52vh;
-  overflow-y: auto;
-  padding-right: 4px;
-}
-
-.history-empty {
-  color: var(--text-secondary);
-  font-size: 14px;
-  line-height: 1.5;
-  padding: 16px 0;
-  text-align: center;
-}
-
-.history-message {
-  border-radius: 6px;
-  padding: 12px 14px;
-  font-size: 14px;
-  line-height: 1.55;
-  border: 1px solid var(--border-subtle);
-  background: var(--surface-elevated);
-}
-
-.history-message.model {
-  border-left: 3px solid var(--accent-cyan);
-}
-
-.history-message.user {
-  background: rgba(20, 128, 163, 0.18);
-  border-left: 3px solid var(--text-primary);
-}
-
-.history-message header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 12px;
-  margin-bottom: 6px;
-  color: var(--text-secondary);
-}
-
-.history-message header strong {
-  color: var(--text-primary);
-  font-size: 13px;
-}
-
-.history-message p {
-  color: var(--text-primary);
-  word-break: break-word;
-  white-space: pre-wrap;
-}
-
-.history-message small {
-  display: inline-block;
-  margin-top: 6px;
-  font-size: 11px;
-  color: var(--accent-cyan);
-  font-weight: 600;
-}
-
-.history-waiting {
-  font-style: italic;
-  font-size: 13px;
-  color: var(--accent-cyan);
-  padding: 6px 0;
-}
-
-.modal-actions,
-.confirm-actions {
+.modal-actions {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  margin-top: 6px;
+  flex-wrap: wrap;
 }
 
-/* ==========================================================================
-   RESPONSIVE BREAKPOINTS (TABLET, PHONE, & LANDSCAPE)
-   ========================================================================== */
-@media (max-width: 1024px) {
-  .scene__character {
-    width: min(500px, 68vw);
-    height: 124%;
-    top: 4%;
-  }
-
-  .dialogue-dock {
-    padding: 0 14px max(14px, env(safe-area-inset-bottom));
-  }
-
-  .dialogue__content {
-    padding: 16px 18px 14px;
-  }
+.modal-btn {
+  min-height: 44px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
 }
 
-@media (max-width: 640px) {
-  .scene__character {
-    width: min(420px, 88vw);
-    height: 116%;
-    top: 3%;
+.modal-btn--secondary {
+  background: var(--momo-sidebar);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary);
+}
+
+.modal-btn--secondary:hover {
+  border-color: var(--momo-pink);
+}
+
+.modal-btn--primary {
+  background: var(--momo-pink);
+  color: var(--text-white);
+}
+
+.modal-btn--primary:hover {
+  background: var(--momo-pink-hover);
+}
+
+@media (max-width: 820px) {
+  .momotalk-stage {
+    padding: 0;
   }
 
-  .scene__controls {
-    top: max(12px, env(safe-area-inset-top));
-    right: max(12px, env(safe-area-inset-right));
+  .momotalk-window {
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+    border: none;
   }
 
-  .dialogue-dock {
-    padding: 0 8px max(8px, env(safe-area-inset-bottom));
+  .momotalk-body {
+    grid-template-columns: 52px 1fr;
   }
 
-  .dialogue__content {
-    padding: 14px 14px 12px;
-    gap: 8px;
-  }
-
-  .dialogue__text {
-    min-height: 48px;
-    max-height: 22vh;
-  }
-
-  .dialogue__reply-input {
-    min-height: 56px;
-    padding: 8px 12px;
-  }
-
-  .menu__card {
-    padding: 18px;
+  .momotalk-sidebar {
+    display: none;
   }
 }
 
-@media (max-height: 520px) and (orientation: landscape) {
-  .scene__character {
-    width: min(320px, 42vw);
-    height: 136%;
-    top: 2%;
+@media (max-width: 520px) {
+  .momotalk-body {
+    grid-template-columns: 1fr;
   }
 
-  .dialogue-dock {
-    padding: 0 12px 8px;
+  .momotalk-rail {
+    display: none;
   }
 
-  .dialogue__content {
-    padding: 10px 16px;
-    gap: 6px;
+  .momotalk-feed {
+    padding: 14px 12px;
   }
 
-  .dialogue__text {
-    min-height: 38px;
-    max-height: 18vh;
+  .momo-bubble {
+    max-width: 88%;
   }
 
-  .dialogue__reply-input {
-    min-height: 44px;
-    max-height: 68px;
+  .momotalk-composer {
+    padding: 10px 12px max(10px, env(safe-area-inset-bottom));
   }
 }
 
@@ -866,5 +823,6 @@ button:disabled {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
