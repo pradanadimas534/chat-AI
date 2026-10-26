@@ -259,6 +259,11 @@ export default function App() {
 
             <div className="momotalk-contact-list">
               <div className="momotalk-contact momotalk-contact--active">
+                <img
+                  className="momotalk-contact__avatar"
+                  src="/shiroko.webp"
+                  alt="Foto profil Shiroko"
+                />
                 <div className="momotalk-contact__info">
                   <div className="momotalk-contact__row">
                     <strong>Shiroko</strong>
@@ -288,6 +293,11 @@ export default function App() {
             >
               {messages.length === 0 && !loading && (
                 <div className="momotalk-empty">
+                  <img
+                    className="momotalk-empty__avatar"
+                    src="/shiroko.webp"
+                    alt="Foto profil Shiroko"
+                  />
                   <p className="momotalk-empty__title">Shiroko (Abydos)</p>
                   <p className="momotalk-empty__desc">
                     Belum ada pesan. Tulis pesan pertama dari Sensei di bawah untuk mengobrol dengan Shiroko.
@@ -298,40 +308,80 @@ export default function App() {
               {messages.map((m, idx) => {
                 const isUser = m.role === "user";
                 const prev = messages[idx - 1];
-                const showSenderName = !isUser && (!prev || prev.role !== "model");
+                const isFirstInGroup = !prev || prev.role !== m.role;
                 return (
                   <article
                     key={m.id}
                     className={`momo-msg ${isUser ? "momo-msg--sensei" : "momo-msg--student"}`}
                   >
-                    {showSenderName && (
-                      <div className="momo-msg__header">
-                        <strong className="momo-msg__name">Shiroko</strong>
-                        <time className="momo-msg__time">{timeLabel(m.time)}</time>
+                    {!isUser ? (
+                      <div className="momo-msg__avatar-col">
+                        {isFirstInGroup ? (
+                          <img
+                            className="momo-avatar"
+                            src="/shiroko.webp"
+                            alt="Foto profil Shiroko"
+                          />
+                        ) : (
+                          <div className="momo-avatar-spacer" aria-hidden="true" />
+                        )}
                       </div>
-                    )}
-                    <div
-                      className={`momo-bubble ${isUser ? "momo-bubble--sensei" : "momo-bubble--student"}`}
-                    >
-                      <p className="momo-bubble__text">{m.text}</p>
-                      {isUser && (
-                        <time className="momo-bubble__time-inline">
-                          {timeLabel(m.time)}
-                        </time>
+                    ) : null}
+
+                    <div className="momo-msg__content">
+                      {isFirstInGroup && (
+                        <div
+                          className={`momo-msg__header ${isUser ? "momo-msg__header--sensei" : ""}`}
+                        >
+                          <strong className="momo-msg__name">
+                            {isUser ? "Sensei" : "Shiroko"}
+                          </strong>
+                          <time className="momo-msg__time">{timeLabel(m.time)}</time>
+                        </div>
                       )}
+                      <div
+                        className={`momo-bubble ${isUser ? "momo-bubble--sensei" : "momo-bubble--student"}`}
+                      >
+                        <p className="momo-bubble__text">{m.text}</p>
+                      </div>
                     </div>
+
+                    {isUser ? (
+                      <div className="momo-msg__avatar-col">
+                        {isFirstInGroup ? (
+                          <div
+                            className="momo-avatar momo-avatar--blank"
+                            title="Sensei"
+                            aria-label="Foto profil kosong Sensei"
+                          >
+                            <Icon name="userTab" />
+                          </div>
+                        ) : (
+                          <div className="momo-avatar-spacer" aria-hidden="true" />
+                        )}
+                      </div>
+                    ) : null}
                   </article>
                 );
               })}
 
               {loading && (
                 <article className="momo-msg momo-msg--student" role="status">
-                  <div className="momo-msg__header">
-                    <strong className="momo-msg__name">Shiroko</strong>
-                    <span className="momo-msg__time">Mengetik…</span>
+                  <div className="momo-msg__avatar-col">
+                    <img
+                      className="momo-avatar"
+                      src="/shiroko.webp"
+                      alt="Foto profil Shiroko"
+                    />
                   </div>
-                  <div className="momo-bubble momo-bubble--student momo-bubble--typing">
-                    <p className="momo-bubble__text">•••</p>
+                  <div className="momo-msg__content">
+                    <div className="momo-msg__header">
+                      <strong className="momo-msg__name">Shiroko</strong>
+                      <span className="momo-msg__time">Mengetik…</span>
+                    </div>
+                    <div className="momo-bubble momo-bubble--student momo-bubble--typing">
+                      <p className="momo-bubble__text">•••</p>
+                    </div>
                   </div>
                 </article>
               )}
