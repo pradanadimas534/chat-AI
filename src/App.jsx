@@ -91,7 +91,7 @@ function CharacterAvatar({ character, className }) {
 
   return (
     <img
-      className={`${className} ${character.id === "shiroko_terror" ? "avatar--terror" : ""}`}
+      className={className}
       src={src}
       alt={`Foto profil ${character.name}`}
       onError={() => {

@@ -292,10 +292,6 @@ button:disabled {
   border-left: 4px solid var(--momo-pink);
 }
 
-.avatar--terror {
-  filter: contrast(1.08) brightness(0.86) saturate(0.85) hue-rotate(25deg);
-}
-
 .momotalk-contact__avatar {
   width: 48px;
   height: 48px;
