@@ -1,7 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
 import {
   buildChatRequest,
+  CHARACTERS,
   SHIROKO_PERSONA,
   SHIROKO_TERROR_PERSONA,
 } from "../src/persona.js";
@@ -28,13 +31,32 @@ test("persona uses the existing message/history contract without modifying histo
   );
 });
 
-test("shiroko_terror character uses SHIROKO_TERROR_PERSONA", () => {
-  const payload = buildChatRequest("Malam, Kuroko.", [], "shiroko_terror");
-  assert.ok(payload.message.startsWith(SHIROKO_TERROR_PERSONA));
-  assert.equal(
-    JSON.parse(payload.message.split("Pesan Sensei (string JSON):\n").at(-1)),
-    "Malam, Kuroko.",
-  );
+test("all 9 MomoTalk characters have distinct personas and existing public .webp avatars", () => {
+  const expectedIds = [
+    "shiroko",
+    "shiroko_terror",
+    "wakamo",
+    "azusa",
+    "mika",
+    "serika",
+    "ibuki",
+    "chise",
+    "iroha",
+  ];
+  assert.deepEqual(Object.keys(CHARACTERS), expectedIds);
+
+  for (const id of expectedIds) {
+    const char = CHARACTERS[id];
+    assert.ok(char.persona && char.persona.length > 50);
+    const payload = buildChatRequest("Halo!", [], id);
+    assert.ok(payload.message.startsWith(char.persona));
+
+    const avatarPath = path.join(process.cwd(), "public", char.avatar.replace(/^\//, ""));
+    assert.ok(fs.existsSync(avatarPath), `Missing avatar file: ${avatarPath}`);
+  }
+
+  const terrorPayload = buildChatRequest("Malam, Kuroko.", [], "shiroko_terror");
+  assert.ok(terrorPayload.message.startsWith(SHIROKO_TERROR_PERSONA));
 });
 
 test("each turn carries one style request without accumulating earlier copies", () => {

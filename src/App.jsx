@@ -105,10 +105,9 @@ function CharacterAvatar({ character, className }) {
 
 export default function App() {
   const [activeCharId, setActiveCharId] = useState("shiroko");
-  const [threads, setThreads] = useState({
-    shiroko: [],
-    shiroko_terror: [],
-  });
+  const [threads, setThreads] = useState(() =>
+    Object.fromEntries(CHARACTER_LIST.map((c) => [c.id, []])),
+  );
   const [input, setInput] = useState("");
   const [loadingCharId, setLoadingCharId] = useState(null);
   const [error, setError] = useState(null);
@@ -693,7 +692,7 @@ export default function App() {
               <div className="about-item">
                 <dt>Model AI</dt>
                 <dd>
-                  Google Gemini (Karakter: Sunaookami Shiroko & Shiroko Terror)
+                  Google Gemini (Karakter: Shiroko, Shiroko Terror, Wakamo, Azusa, Mika, Serika, Ibuki, Chise & Iroha)
                 </dd>
               </div>
             </dl>
