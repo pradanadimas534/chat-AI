@@ -416,7 +416,7 @@ export default function App() {
                       if (input.trim() && !loading) handleSendMessage(e);
                     }
                   }}
-                  placeholder="Kirim pesan ke Shiroko... (Tekan Enter untuk kirim)"
+                  placeholder="Kirim pesan (Tekan Enter untuk kirim)"
                   rows={1}
                   maxLength={500}
                   disabled={loading}
