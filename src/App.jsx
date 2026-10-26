@@ -55,7 +55,7 @@ function Icon({ name }) {
 }
 
 function Dialogue({ message, onFinished, onReply, animated, paused, autoPlay }) {
-  const pages = paginateDialogue(message.text, 80);
+  const pages = paginateDialogue(message.text, 120);
   const [page, setPage] = useState(0);
   const [visible, setVisible] = useState(0);
   const textRef = useRef(null);
@@ -96,7 +96,6 @@ function Dialogue({ message, onFinished, onReply, animated, paused, autoPlay }) 
     return () => clearInterval(timer);
   }, [page, content.text, animated]);
 
-  // Notify parent when dialogue reaches the end
   useEffect(() => {
     if (complete && page >= pages.length - 1) {
       onFinished?.();
@@ -137,11 +136,11 @@ function Dialogue({ message, onFinished, onReply, animated, paused, autoPlay }) 
     }
   }
 
-  const action = !complete
-    ? "Tampilkan seluruh teks"
+  const actionLabel = !complete
+    ? "Ketuk untuk menampilkan semua"
     : page < pages.length - 1
-      ? "Lanjut"
-      : "Balas Shiroko";
+      ? "Halaman berikutnya"
+      : "Ketuk untuk membalas";
 
   return (
     <section
@@ -150,34 +149,43 @@ function Dialogue({ message, onFinished, onReply, animated, paused, autoPlay }) 
       aria-live="polite"
       onClick={advance}
     >
-      <img className="dialogue__panel" src="/ui/dialogue-box.png" alt="" />
       <div className="dialogue__content">
         <header className="dialogue__header">
-          <h1>Sunaookami Shiroko</h1>
-          <p>
-            {content.narration ? "Narasi" : "Abydos High School · 対策委員会"}
-            {pages.length > 1 ? ` (${page + 1}/${pages.length})` : ""}
-          </p>
+          <div className="dialogue__speaker">
+            <span className="dialogue__accent-bar" aria-hidden="true" />
+            <h1>Sunaookami Shiroko</h1>
+            <span className="dialogue__affiliation">
+              {content.narration ? "Narasi" : "Abydos · 対策委員会"}
+            </span>
+          </div>
+          {pages.length > 1 && (
+            <span className="dialogue__meta">
+              {page + 1} / {pages.length}
+            </span>
+          )}
         </header>
-        <img className="dialogue__rule" src="/ui/dialogue-rule.svg" alt="" />
+        <div className="dialogue__divider" aria-hidden="true" />
         <p
           ref={textRef}
           onScroll={checkScroll}
           className={`dialogue__text ${content.narration ? "narration" : ""}`}
         >
           {complete ? content.text : content.text.slice(0, visible)}
-          <span className="text-cursor">{!complete ? "…" : ""}</span>
+          <span className="text-cursor">{!complete ? "▍" : ""}</span>
         </p>
+        <footer className="dialogue__footer">
+          <span className="dialogue__hint">{actionLabel}</span>
+          <button
+            className="dialogue__next"
+            type="button"
+            onClick={advance}
+            aria-label={actionLabel}
+          >
+            <span>{page < pages.length - 1 ? "Lanjut" : "Balas"}</span>
+            <Icon name="next" />
+          </button>
+        </footer>
       </div>
-
-      <button
-        className="dialogue__next"
-        type="button"
-        onClick={advance}
-        aria-label={action}
-      >
-        <img src="/ui/dialogue-next.svg" alt="" />
-      </button>
     </section>
   );
 }
@@ -310,7 +318,6 @@ export default function App() {
           ? "Balasan Shiroko memakan waktu terlalu lama. Silakan coba kirim lagi."
           : "Pesan belum terkirim: " + err.message,
       );
-      // Restore user input draft on failure
       setInput(textToSend);
       setMessages((prev) => prev.filter((m) => m.id !== id));
       setDialogueDone(true);
@@ -359,7 +366,7 @@ export default function App() {
       <div
         className="scene__controls"
         role="toolbar"
-        aria-label="Scene controls"
+        aria-label="Kontrol adegan"
       >
         <button
           className={`scene__control ${isReplying ? "scene__control--active" : ""}`}
@@ -369,7 +376,7 @@ export default function App() {
             setIsReplying((prev) => (lastReply ? !prev : true));
           }}
         >
-          Balas
+          <span>Balas</span>
         </button>
         <button
           className={`scene__control ${hideUI ? "scene__control--active" : ""}`}
@@ -380,7 +387,7 @@ export default function App() {
           }}
           title={hideUI ? "Tampilkan UI" : "Sembunyikan UI"}
         >
-          UI
+          <span>UI</span>
         </button>
         <button
           className={`scene__control ${autoPlay ? "scene__control--active" : ""}`}
@@ -391,7 +398,7 @@ export default function App() {
           }}
           aria-pressed={autoPlay}
         >
-          Auto
+          <span>Auto</span>
         </button>
         <button
           className="scene__control"
@@ -401,7 +408,7 @@ export default function App() {
             setPanel("history");
           }}
         >
-          Riwayat
+          <span>Riwayat</span>
         </button>
         <button
           className="scene__control"
@@ -411,7 +418,7 @@ export default function App() {
             setPanel("menu");
           }}
         >
-          Menu
+          <span>Menu</span>
         </button>
       </div>
 
@@ -431,81 +438,102 @@ export default function App() {
           </div>
         )}
 
-        {/* Dialogue Box */}
-        {loading ? (
-          <section className="dialogue waiting" aria-live="polite">
-            <img className="dialogue__panel" src="/ui/dialogue-box.png" alt="" />
-            <div className="dialogue__content">
-              <header className="dialogue__header">
-                <h1>Sunaookami Shiroko</h1>
-                <p>Abydos High School · 対策委員会</p>
-              </header>
-              <img className="dialogue__rule" src="/ui/dialogue-rule.svg" alt="" />
-              <p className="dialogue__text">
-                Shiroko sedang memikirkan balasan…
-              </p>
-            </div>
-          </section>
-        ) : isReplying || !lastReply ? (
-          <section className="dialogue dialogue--reply" aria-label="Kolom balasan Sensei">
-            <img className="dialogue__panel" src="/ui/dialogue-box.png" alt="" />
-            <div className="dialogue__content">
-              <header className="dialogue__header">
-                <h1>Sensei</h1>
-                <p>Schale · Penasihat</p>
-              </header>
-              <img className="dialogue__rule" src="/ui/dialogue-rule.svg" alt="" />
-              <form className="dialogue__reply-form" onSubmit={handleSendMessage}>
-                <textarea
-                  ref={inputRef}
-                  className="dialogue__reply-input"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      if (input.trim() && !loading) handleSendMessage(e);
-                    }
-                  }}
-                  placeholder="Tulis pesan untuk Shiroko di sini... (Enter untuk kirim)"
-                  rows={2}
-                  maxLength={400}
-                  disabled={loading}
-                />
-                <div className="dialogue__reply-actions">
-                  {lastReply && (
+        {/* Bottom Docked Dialogue & Reply Panel */}
+        <div className="dialogue-dock">
+          {loading ? (
+            <section className="dialogue waiting" aria-live="polite">
+              <div className="dialogue__content">
+                <header className="dialogue__header">
+                  <div className="dialogue__speaker">
+                    <span className="dialogue__accent-bar" aria-hidden="true" />
+                    <h1>Sunaookami Shiroko</h1>
+                    <span className="dialogue__affiliation">
+                      Abydos · 対策委員会
+                    </span>
+                  </div>
+                  <span className="dialogue__meta">Mengetik…</span>
+                </header>
+                <div className="dialogue__divider" aria-hidden="true" />
+                <p className="dialogue__text">
+                  Shiroko sedang memikirkan balasan…
+                </p>
+              </div>
+            </section>
+          ) : isReplying || !lastReply ? (
+            <section
+              className="dialogue dialogue--reply"
+              aria-label="Kolom balasan Sensei"
+            >
+              <div className="dialogue__content">
+                <header className="dialogue__header">
+                  <div className="dialogue__speaker">
+                    <span
+                      className="dialogue__accent-bar dialogue__accent-bar--sensei"
+                      aria-hidden="true"
+                    />
+                    <h1>Sensei</h1>
+                    <span className="dialogue__affiliation">
+                      Schale · Penasihat
+                    </span>
+                  </div>
+                  <span className="dialogue__meta">{input.length}/400</span>
+                </header>
+                <div className="dialogue__divider" aria-hidden="true" />
+                <form
+                  className="dialogue__reply-form"
+                  onSubmit={handleSendMessage}
+                >
+                  <textarea
+                    ref={inputRef}
+                    className="dialogue__reply-input"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        if (input.trim() && !loading) handleSendMessage(e);
+                      }
+                    }}
+                    placeholder="Tulis pesan untuk Shiroko di sini... (Tekan Enter untuk kirim)"
+                    rows={2}
+                    maxLength={400}
+                    disabled={loading}
+                  />
+                  <div className="dialogue__reply-actions">
+                    {lastReply && (
+                      <button
+                        type="button"
+                        className="dialogue__cancel-btn"
+                        onClick={() => setIsReplying(false)}
+                      >
+                        Lihat Dialog Shiroko
+                      </button>
+                    )}
                     <button
-                      type="button"
-                      className="dialogue__cancel-btn"
-                      onClick={() => setIsReplying(false)}
+                      className="dialogue__send-btn"
+                      type="submit"
+                      disabled={loading || !input.trim()}
+                      aria-label="Kirim balasan"
                     >
-                      Batal
+                      <span>Kirim Pesan</span>
+                      <Icon name="send" />
                     </button>
-                  )}
-                  <button
-                    className="dialogue__send-btn"
-                    type="submit"
-                    disabled={loading || !input.trim()}
-                    aria-label="Kirim balasan"
-                  >
-                    <span>Kirim</span>
-                    <Icon name="send" />
-                  </button>
-                </div>
-              </form>
-            </div>
-          </section>
-        ) : (
-          <Dialogue
-            key={lastReply.id}
-            message={lastReply}
-            onFinished={() => setDialogueDone(true)}
-            onReply={() => setIsReplying(true)}
-            animated={animated}
-            paused={panel !== null}
-            autoPlay={autoPlay}
-          />
-        )}
+                  </div>
+                </form>
+              </div>
+            </section>
+          ) : (
+            <Dialogue
+              key={lastReply.id}
+              message={lastReply}
+              onFinished={() => setDialogueDone(true)}
+              onReply={() => setIsReplying(true)}
+              animated={animated}
+              paused={panel !== null}
+              autoPlay={autoPlay}
+            />
+          )}
+        </div>
       </div>
 
       {/* History Modal */}
@@ -532,6 +560,11 @@ export default function App() {
               </button>
             </div>
             <div className="message-list" role="log" aria-label="Pesan">
+              {messages.length === 0 && !loading && (
+                <p className="history-empty">
+                  Belum ada riwayat obrolan. Kirim pesan pertama kepada Shiroko untuk memulai percakapan.
+                </p>
+              )}
               {messages.map((m) => (
                 <article className={`history-message ${m.role}`} key={m.id}>
                   <header>
@@ -553,7 +586,7 @@ export default function App() {
               )}
             </div>
             <div className="modal-actions">
-              <button type="button" onClick={() => setPanel(null)}>
+              <button type="button" className="resume-btn" onClick={() => setPanel(null)}>
                 Tutup
               </button>
             </div>
@@ -574,7 +607,7 @@ export default function App() {
         >
           <div className="menu__card">
             <div className="modal-title-row">
-              <h2 id="menu-title">Menu</h2>
+              <h2 id="menu-title">Pengaturan & Menu</h2>
               <button
                 className="menu-close-btn"
                 type="button"
@@ -591,7 +624,7 @@ export default function App() {
                 setIsReplying(true);
               }}
             >
-              Balas Shiroko
+              Tulis Pesan ke Shiroko
             </button>
             <button
               type="button"
@@ -617,7 +650,7 @@ export default function App() {
               className="resume-btn"
               onClick={() => setPanel(null)}
             >
-              Lanjut
+              Kembali ke Ruangan
             </button>
           </div>
         </div>
@@ -635,8 +668,18 @@ export default function App() {
           }}
         >
           <div className="menu__card">
-            <h2 id="reset-title">Mulai Cerita Baru?</h2>
-            <p style={{ color: "#4c667c", lineHeight: "1.5" }}>
+            <div className="modal-title-row">
+              <h2 id="reset-title">Mulai Cerita Baru?</h2>
+              <button
+                className="menu-close-btn"
+                type="button"
+                onClick={() => setPanel(null)}
+                aria-label="Tutup konfirmasi"
+              >
+                <Icon name="close" />
+              </button>
+            </div>
+            <p className="modal-description">
               Riwayat percakapan saat ini akan dibersihkan dan memulai obrolan baru dari awal.
             </p>
             <div className="confirm-actions">
