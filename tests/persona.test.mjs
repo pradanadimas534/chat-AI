@@ -1,6 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildChatRequest, SHIROKO_PERSONA } from "../src/persona.js";
+import {
+  buildChatRequest,
+  SHIROKO_PERSONA,
+  SHIROKO_TERROR_PERSONA,
+} from "../src/persona.js";
 
 test("persona uses the existing message/history contract without modifying history", () => {
   const history = Object.freeze([
@@ -21,6 +25,15 @@ test("persona uses the existing message/history contract without modifying histo
   assert.equal(
     JSON.parse(payload.message.split("Pesan Sensei (string JSON):\n").at(-1)),
     'Aku capek.\nBisa temani "sebentar"?',
+  );
+});
+
+test("shiroko_terror character uses SHIROKO_TERROR_PERSONA", () => {
+  const payload = buildChatRequest("Malam, Kuroko.", [], "shiroko_terror");
+  assert.ok(payload.message.startsWith(SHIROKO_TERROR_PERSONA));
+  assert.equal(
+    JSON.parse(payload.message.split("Pesan Sensei (string JSON):\n").at(-1)),
+    "Malam, Kuroko.",
   );
 });
 

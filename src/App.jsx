@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { buildChatRequest } from "./persona.js";
+import { buildChatRequest, CHARACTERS } from "./persona.js";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "";
+const CHARACTER_LIST = Object.values(CHARACTERS);
 const makeId = () =>
   Math.random().toString(36).slice(2) + Date.now().toString(36);
 const timeLabel = (time) =>
@@ -82,16 +83,44 @@ function Icon({ name }) {
   );
 }
 
+function CharacterAvatar({ character, className }) {
+  const [src, setSrc] = useState(character.avatar);
+  useEffect(() => {
+    setSrc(character.avatar);
+  }, [character.avatar]);
+
+  return (
+    <img
+      className={`${className} ${character.id === "shiroko_terror" ? "avatar--terror" : ""}`}
+      src={src}
+      alt={`Foto profil ${character.name}`}
+      onError={() => {
+        if (character.fallbackAvatar && src !== character.fallbackAvatar) {
+          setSrc(character.fallbackAvatar);
+        }
+      }}
+    />
+  );
+}
+
 export default function App() {
-  const [messages, setMessages] = useState([]);
+  const [activeCharId, setActiveCharId] = useState("shiroko");
+  const [threads, setThreads] = useState({
+    shiroko: [],
+    shiroko_terror: [],
+  });
   const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loadingCharId, setLoadingCharId] = useState(null);
   const [error, setError] = useState(null);
   const [panel, setPanel] = useState(null);
 
   const requestRef = useRef(null);
   const inputRef = useRef(null);
   const feedEndRef = useRef(null);
+
+  const activeChar = CHARACTERS[activeCharId] || CHARACTERS.shiroko;
+  const messages = threads[activeChar.id] || [];
+  const loading = loadingCharId === activeChar.id;
 
   useEffect(() => {
     const viewport = window.visualViewport;
@@ -112,7 +141,7 @@ export default function App() {
 
   useEffect(() => {
     feedEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages, loading]);
+  }, [messages, loading, activeCharId]);
 
   useEffect(() => {
     if (!panel) return;
@@ -123,27 +152,40 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [panel]);
 
+  function handleSelectCharacter(charId) {
+    if (charId === activeCharId) return;
+    setError(null);
+    setActiveCharId(charId);
+    setTimeout(() => inputRef.current?.focus(), 40);
+  }
+
   async function handleSendMessage(e) {
     if (e) e.preventDefault();
     const textToSend = input.trim();
-    if (!textToSend || loading || requestRef.current) return;
+    if (!textToSend || loadingCharId || requestRef.current) return;
+
+    const targetChar = activeChar;
+    const currentMessages = threads[targetChar.id] || [];
 
     const controller = new AbortController();
     requestRef.current = controller;
     const timer = setTimeout(() => controller.abort(), 70000);
     const id = makeId();
     setError(null);
-    setLoading(true);
+    setLoadingCharId(targetChar.id);
     setPanel(null);
     setInput("");
 
-    setMessages((prev) => [
+    setThreads((prev) => ({
       ...prev,
-      { id, role: "user", text: textToSend, time: new Date() },
-    ]);
+      [targetChar.id]: [
+        ...(prev[targetChar.id] || []),
+        { id, role: "user", text: textToSend, time: new Date() },
+      ],
+    }));
 
     try {
-      const history = messages.map((m) => ({
+      const history = currentMessages.map((m) => ({
         role: m.role === "model" ? "assistant" : "user",
         content: m.text,
       }));
@@ -151,12 +193,16 @@ export default function App() {
       const res = await fetch(`${API_BASE}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(buildChatRequest(textToSend, history)),
+        body: JSON.stringify(
+          buildChatRequest(textToSend, history, targetChar.id),
+        ),
         signal: controller.signal,
       });
 
       const data = await res.json().catch(() => {
-        throw new Error("Shiroko belum bisa membalas. Coba lagi sebentar, ya.");
+        throw new Error(
+          `${targetChar.name} belum bisa membalas. Coba lagi sebentar, ya.`,
+        );
       });
 
       if (!res.ok)
@@ -171,32 +217,40 @@ export default function App() {
 
       const cleanReply = data.reply.trim();
 
-      setMessages((prev) => [
+      setThreads((prev) => ({
         ...prev,
-        {
-          id: makeId(),
-          role: "model",
-          text: cleanReply,
-          time: new Date(),
-        },
-      ]);
+        [targetChar.id]: [
+          ...(prev[targetChar.id] || []),
+          {
+            id: makeId(),
+            role: "model",
+            text: cleanReply,
+            time: new Date(),
+          },
+        ],
+      }));
     } catch (err) {
       setError(
         err.name === "AbortError"
-          ? "Balasan Shiroko memakan waktu terlalu lama. Silakan coba kirim lagi."
+          ? `Balasan ${targetChar.name} memakan waktu terlalu lama. Silakan coba kirim lagi.`
           : "Pesan belum terkirim: " + err.message,
       );
       setInput(textToSend);
-      setMessages((prev) => prev.filter((m) => m.id !== id));
+      setThreads((prev) => ({
+        ...prev,
+        [targetChar.id]: (prev[targetChar.id] || []).filter((m) => m.id !== id),
+      }));
     } finally {
       clearTimeout(timer);
       requestRef.current = null;
-      setLoading(false);
+      setLoadingCharId(null);
       setTimeout(() => inputRef.current?.focus(), 40);
     }
   }
 
-  const lastMessage = messages[messages.length - 1];
+  const unreadCount = CHARACTER_LIST.filter(
+    (c) => (threads[c.id] || []).length === 0,
+  ).length;
 
   return (
     <div className="momotalk-stage">
@@ -238,13 +292,17 @@ export default function App() {
               title="Chat"
             >
               <Icon name="chatTab" />
-              <span className="momotalk-rail__badge">1</span>
+              {unreadCount > 0 && (
+                <span className="momotalk-rail__badge">{unreadCount}</span>
+              )}
             </button>
           </aside>
 
-          <aside className="momotalk-sidebar" aria-label="Daftar kontak">
+          <aside className="momotalk-sidebar" aria-label="Daftar siswa">
             <div className="momotalk-sidebar__toolbar">
-              <span className="momotalk-sidebar__count">Chat Aktif (1)</span>
+              <span className="momotalk-sidebar__count">
+                Chat Aktif ({CHARACTER_LIST.length})
+              </span>
               <div className="momotalk-sidebar__filters" aria-hidden="true">
                 <span className="filter-pill">Newest</span>
                 <span className="filter-icon">
@@ -253,50 +311,94 @@ export default function App() {
               </div>
             </div>
 
-            <div className="momotalk-contact-list">
-              <div className="momotalk-contact momotalk-contact--active">
-                <img
-                  className="momotalk-contact__avatar"
-                  src="/shiroko.webp"
-                  alt="Foto profil Shiroko"
-                />
-                <div className="momotalk-contact__info">
-                  <div className="momotalk-contact__row">
-                    <strong>Shiroko</strong>
-                    <span className="momotalk-contact__school">Abydos</span>
-                  </div>
-                  <p className="momotalk-contact__preview">
-                    {loading
-                      ? "Sedang mengetik..."
-                      : lastMessage
-                        ? lastMessage.text
-                        : "Ketuk kolom pesan untuk mulai chat"}
-                  </p>
-                </div>
-                {messages.length === 0 && (
-                  <span className="momotalk-unread-badge">1</span>
-                )}
-              </div>
+            <div className="momotalk-contact-list" role="listbox" aria-label="Pilih karakter">
+              {CHARACTER_LIST.map((char) => {
+                const charMessages = threads[char.id] || [];
+                const lastMsg = charMessages[charMessages.length - 1];
+                const isSelected = char.id === activeChar.id;
+                const isTyping = loadingCharId === char.id;
+                return (
+                  <button
+                    key={char.id}
+                    type="button"
+                    role="option"
+                    aria-selected={isSelected}
+                    className={`momotalk-contact ${isSelected ? "momotalk-contact--active" : ""}`}
+                    onClick={() => handleSelectCharacter(char.id)}
+                  >
+                    <CharacterAvatar
+                      character={char}
+                      className="momotalk-contact__avatar"
+                    />
+                    <div className="momotalk-contact__info">
+                      <div className="momotalk-contact__row">
+                        <strong>{char.name}</strong>
+                        <span className="momotalk-contact__school">
+                          {char.school}
+                        </span>
+                      </div>
+                      <p className="momotalk-contact__preview">
+                        {isTyping
+                          ? "Sedang mengetik..."
+                          : lastMsg
+                            ? lastMsg.text
+                            : "Ketuk untuk mulai chat"}
+                      </p>
+                    </div>
+                    {charMessages.length === 0 && (
+                      <span className="momotalk-unread-badge">1</span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </aside>
 
-          <section className="momotalk-chat-pane" aria-label="Ruang obrolan Shiroko">
+          <section
+            className="momotalk-chat-pane"
+            aria-label={`Ruang obrolan ${activeChar.name}`}
+          >
+            {/* Mobile / Tablet Character Switcher Bar */}
+            <div className="momotalk-mobile-switcher" aria-label="Pilih karakter">
+              {CHARACTER_LIST.map((char) => {
+                const isSelected = char.id === activeChar.id;
+                return (
+                  <button
+                    key={char.id}
+                    type="button"
+                    className={`mobile-char-pill ${isSelected ? "mobile-char-pill--active" : ""}`}
+                    onClick={() => handleSelectCharacter(char.id)}
+                  >
+                    <CharacterAvatar
+                      character={char}
+                      className="mobile-char-pill__avatar"
+                    />
+                    <span>{char.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+
             <div
               className="momotalk-feed"
               role="log"
               aria-live="polite"
-              aria-label="Pesan MomoTalk dengan Shiroko"
+              aria-label={`Pesan MomoTalk dengan ${activeChar.name}`}
             >
               {messages.length === 0 && !loading && (
                 <div className="momotalk-empty">
-                  <img
+                  <CharacterAvatar
+                    character={activeChar}
                     className="momotalk-empty__avatar"
-                    src="/shiroko.webp"
-                    alt="Foto profil Shiroko"
                   />
-                  <p className="momotalk-empty__title">Shiroko (Abydos)</p>
+                  <p className="momotalk-empty__title">
+                    {activeChar.fullName}
+                  </p>
+                  <p className="momotalk-empty__sub">
+                    {activeChar.affiliation}
+                  </p>
                   <p className="momotalk-empty__desc">
-                    Belum ada pesan. Tulis pesan pertama dari Sensei di bawah untuk mengobrol dengan Shiroko.
+                    Belum ada pesan. Tulis pesan pertama dari Sensei di bawah untuk mengobrol dengan {activeChar.name}.
                   </p>
                 </div>
               )}
@@ -313,10 +415,9 @@ export default function App() {
                     {!isUser ? (
                       <div className="momo-msg__avatar-col">
                         {isFirstInGroup ? (
-                          <img
+                          <CharacterAvatar
+                            character={activeChar}
                             className="momo-avatar"
-                            src="/shiroko.webp"
-                            alt="Foto profil Shiroko"
                           />
                         ) : (
                           <div className="momo-avatar-spacer" aria-hidden="true" />
@@ -330,7 +431,7 @@ export default function App() {
                           className={`momo-msg__header ${isUser ? "momo-msg__header--sensei" : ""}`}
                         >
                           <strong className="momo-msg__name">
-                            {isUser ? "Sensei" : "Shiroko"}
+                            {isUser ? "Sensei" : activeChar.name}
                           </strong>
                           <time className="momo-msg__time">{timeLabel(m.time)}</time>
                         </div>
@@ -364,15 +465,14 @@ export default function App() {
               {loading && (
                 <article className="momo-msg momo-msg--student" role="status">
                   <div className="momo-msg__avatar-col">
-                    <img
+                    <CharacterAvatar
+                      character={activeChar}
                       className="momo-avatar"
-                      src="/shiroko.webp"
-                      alt="Foto profil Shiroko"
                     />
                   </div>
                   <div className="momo-msg__content">
                     <div className="momo-msg__header">
-                      <strong className="momo-msg__name">Shiroko</strong>
+                      <strong className="momo-msg__name">{activeChar.name}</strong>
                       <span className="momo-msg__time">Mengetik…</span>
                     </div>
                     <div className="momo-bubble momo-bubble--student momo-bubble--typing">
@@ -403,24 +503,24 @@ export default function App() {
                 <textarea
                   ref={inputRef}
                   className="composer-input"
-                  aria-label="Tulis pesan untuk Shiroko"
+                  aria-label={`Tulis pesan untuk ${activeChar.name}`}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
-                      if (input.trim() && !loading) handleSendMessage(e);
+                      if (input.trim() && !loadingCharId) handleSendMessage(e);
                     }
                   }}
-                  placeholder="Kirim pesan (Tekan Enter untuk kirim)"
+                  placeholder={`Kirim pesan ke ${activeChar.name}... (Tekan Enter untuk kirim)`}
                   rows={1}
                   maxLength={500}
-                  disabled={loading}
+                  disabled={Boolean(loadingCharId)}
                 />
                 <button
                   className="composer-send"
                   type="submit"
-                  disabled={loading || !input.trim()}
+                  disabled={Boolean(loadingCharId) || !input.trim()}
                   aria-label="Kirim pesan"
                 >
                   <span>Kirim</span>
@@ -461,7 +561,7 @@ export default function App() {
                 onClick={() => setPanel("history")}
               >
                 <Icon name="history" />
-                <span>Riwayat Chat</span>
+                <span>Riwayat Chat ({activeChar.name})</span>
               </button>
               <button
                 type="button"
@@ -488,7 +588,7 @@ export default function App() {
         >
           <div className="modal-card modal-card--wide">
             <div className="modal-header">
-              <h2 id="history-title">Riwayat Chat</h2>
+              <h2 id="history-title">Riwayat Chat · {activeChar.name}</h2>
               <button
                 className="modal-close-btn"
                 type="button"
@@ -501,7 +601,7 @@ export default function App() {
             <div className="history-list" role="log" aria-label="Daftar riwayat pesan">
               {messages.length === 0 ? (
                 <p className="history-empty">
-                  Belum ada riwayat obrolan. Kirim pesan pertama kepada Shiroko untuk memulai percakapan.
+                  Belum ada riwayat obrolan dengan {activeChar.name}.
                 </p>
               ) : (
                 messages.map((m) => (
@@ -510,7 +610,9 @@ export default function App() {
                     key={m.id}
                   >
                     <header>
-                      <strong>{m.role === "user" ? "Sensei" : "Shiroko"}</strong>
+                      <strong>
+                        {m.role === "user" ? "Sensei" : activeChar.name}
+                      </strong>
                       <time>{timeLabel(m.time)}</time>
                     </header>
                     <p>{m.text}</p>
@@ -523,7 +625,9 @@ export default function App() {
                 <button
                   type="button"
                   className="modal-btn modal-btn--secondary"
-                  onClick={() => setMessages([])}
+                  onClick={() =>
+                    setThreads((prev) => ({ ...prev, [activeChar.id]: [] }))
+                  }
                 >
                   Bersihkan Chat
                 </button>
@@ -588,7 +692,9 @@ export default function App() {
               </div>
               <div className="about-item">
                 <dt>Model AI</dt>
-                <dd>Google Gemini (Karakter: Sunaookami Shiroko)</dd>
+                <dd>
+                  Google Gemini (Karakter: Sunaookami Shiroko & Shiroko Terror)
+                </dd>
               </div>
             </dl>
             <div className="modal-actions">

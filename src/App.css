@@ -272,17 +272,28 @@ button:disabled {
 }
 
 .momotalk-contact {
+  width: 100%;
+  text-align: left;
   padding: 12px 14px;
   border-bottom: 1px solid var(--border-light);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  transition: background 0.15s ease;
+}
+
+.momotalk-contact:hover {
+  background: rgba(231, 238, 245, 0.65);
 }
 
 .momotalk-contact--active {
   background: var(--momo-contact-active);
   border-left: 4px solid var(--momo-pink);
+}
+
+.avatar--terror {
+  filter: contrast(1.08) brightness(0.86) saturate(0.85) hue-rotate(25deg);
 }
 
 .momotalk-contact__avatar {
@@ -357,6 +368,42 @@ button:disabled {
   min-width: 0;
 }
 
+.momotalk-mobile-switcher {
+  display: none;
+  padding: 8px 12px;
+  gap: 8px;
+  background: var(--momo-sidebar);
+  border-bottom: 1px solid var(--border-light);
+  overflow-x: auto;
+}
+
+.mobile-char-pill {
+  min-height: 44px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: var(--surface-white);
+  border: 1px solid var(--border-light);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.mobile-char-pill--active {
+  background: var(--momo-contact-active);
+  border-color: var(--momo-pink);
+}
+
+.mobile-char-pill__avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
 .momotalk-feed {
   flex: 1;
   overflow-y: auto;
@@ -397,6 +444,12 @@ button:disabled {
   font-size: 16px;
   font-weight: 700;
   color: var(--text-primary);
+}
+
+.momotalk-empty__sub {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--momo-pink);
 }
 
 .momotalk-empty__desc {
@@ -855,6 +908,10 @@ button:disabled {
 
   .momotalk-sidebar {
     display: none;
+  }
+
+  .momotalk-mobile-switcher {
+    display: flex;
   }
 }
 
