@@ -1,14 +1,4 @@
 // Narration and speech appear as separate pages, like a visual novel.
-export function cleanDialogueText(text) {
-  if (typeof text !== "string") return "";
-  return text
-    .replace(
-      /(?:^|\r?\n)\s*(?:\[[^\]\n]*(?:pilihan|opsi|choices?)[^\]\n]*\]|[*_~-]{0,3}\s*(?:pilihan|opsi|rekomendasi|choices?)[^\n]*?[*_~-]{0,3}:?)\s*(?:\r?\n)[\s\S]*$/i,
-      "",
-    )
-    .trim();
-}
-
 export function paginateDialogue(text, limit = 240) {
   const sentences = new Intl.Segmenter("id", { granularity: "sentence" });
   const pages = [];

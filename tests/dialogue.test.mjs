@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { paginateDialogue, cleanDialogueText } from "../src/dialogue.js";
+import { paginateDialogue } from "../src/dialogue.js";
 test("narration is separate from dialogue without losing words", () => {
   assert.deepEqual(paginateDialogue("*tersenyum* Nn, Sensei.\nMau jalan?"), [
     { text: "tersenyum", narration: true },
@@ -33,14 +33,4 @@ test("pages preserve whole sentences beyond the target length", () => {
   ]);
   assert.equal(paginateDialogue("Aku ingin mengajakmu lari pagi", 10)[0].text,
     "Aku ingin mengajakmu lari pagi");
-});
-
-test("cleanDialogueText trims any leftover choices block safely", () => {
-  const raw = `Nn, Sensei. Cuaca hari ini cerah sekali.
-
-[Pilihan]
-1. Mau sepedaan?
-2. Ayo istirahat saja.`;
-  assert.equal(cleanDialogueText(raw), "Nn, Sensei. Cuaca hari ini cerah sekali.");
-  assert.equal(cleanDialogueText("Nn, halo."), "Nn, halo.");
 });

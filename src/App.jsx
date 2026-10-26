@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { expressionDataset } from "./expressionDataset.js";
 import { selectExpression } from "./selectExpression.js";
 import { buildChatRequest } from "./persona.js";
-import { paginateDialogue, cleanDialogueText } from "./dialogue.js";
+import { paginateDialogue } from "./dialogue.js";
 import { getSceneTime } from "./sceneTime.js";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "";
@@ -240,7 +240,7 @@ export default function App() {
 
       const data = await res.json().catch(() => null);
       if (data && typeof data.reply === "string" && data.reply.trim()) {
-        const cleanReply = cleanDialogueText(data.reply);
+        const cleanReply = data.reply.trim();
 
         setMessages([
           {
@@ -348,7 +348,7 @@ export default function App() {
       if (typeof data.reply !== "string" || !data.reply.trim())
         throw new Error("Balasannya kosong. Coba kirim lagi, ya.");
 
-      const cleanReply = cleanDialogueText(data.reply);
+      const cleanReply = data.reply.trim();
 
       setMessages((prev) => [
         ...prev,
