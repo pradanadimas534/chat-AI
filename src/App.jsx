@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { expressionDataset } from "./expressionDataset.js";
 import { selectExpression } from "./selectExpression.js";
 import { buildChatRequest } from "./persona.js";
@@ -198,9 +198,9 @@ export default function App() {
 
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
-  const [isReplying, setIsReplying] = useState(false);
+  const [isReplying, setIsReplying] = useState(true);
   const [dialogueDone, setDialogueDone] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [hideUI, setHideUI] = useState(false);
   const [error, setError] = useState(null);
   const [assetError, setAssetError] = useState(false);
@@ -216,62 +216,6 @@ export default function App() {
   const lastReply = [...messages].reverse().find((m) => m.role === "model");
   const emotion = lastReply?.emotion || "Neutral";
   const expression = expressionDataset[emotion] || expressionDataset.Neutral;
-
-  // Generate 100% dynamic AI opening scene
-  const generateDynamicOpening = useCallback(async () => {
-    setLoading(true);
-    setIsReplying(false);
-    setDialogueDone(false);
-    setError(null);
-    setMessages([]);
-
-    const controller = new AbortController();
-    requestRef.current = controller;
-    const timer = setTimeout(() => controller.abort(), 60000);
-
-    try {
-      // Let AI determine its own opening dialogue completely freely
-      const res = await fetch(`${API_BASE}/api/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(buildChatRequest(null, [])),
-        signal: controller.signal,
-      });
-
-      const data = await res.json().catch(() => null);
-      if (data && typeof data.reply === "string" && data.reply.trim()) {
-        const cleanReply = data.reply.trim();
-
-        setMessages([
-          {
-            id: makeId(),
-            role: "model",
-            text: cleanReply,
-            emotion: selectExpression({
-              emotion: data.emotion,
-              reply: cleanReply,
-            }),
-            greeting: true,
-            time: new Date(),
-          },
-        ]);
-        return;
-      }
-    } catch (err) {
-      console.warn("Dynamic opening generation error:", err);
-    } finally {
-      clearTimeout(timer);
-      requestRef.current = null;
-      setLoading(false);
-    }
-
-    setError("Belum dapat terhubung dengan Shiroko. Silakan muat ulang atau coba lagi.");
-  }, []);
-
-  // On first load, initiate dynamic opening
-  useEffect(() => {
-    generateDynamicOpening();
-  }, [generateDynamicOpening]);
 
   useEffect(() => {
     const img = new Image();
@@ -381,8 +325,11 @@ export default function App() {
   function resetChat() {
     if (requestRef.current) return;
     setPanel(null);
-    setIsReplying(false);
-    generateDynamicOpening();
+    setError(null);
+    setMessages([]);
+    setInput("");
+    setDialogueDone(false);
+    setIsReplying(true);
   }
 
   return (
@@ -419,7 +366,7 @@ export default function App() {
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            setIsReplying((prev) => !prev);
+            setIsReplying((prev) => (lastReply ? !prev : true));
           }}
         >
           Balas
@@ -495,13 +442,11 @@ export default function App() {
               </header>
               <img className="dialogue__rule" src="/ui/dialogue-rule.svg" alt="" />
               <p className="dialogue__text">
-                {messages.length === 0
-                  ? "Shiroko sedang berada di ruangan…"
-                  : "Shiroko sedang memikirkan balasan…"}
+                Shiroko sedang memikirkan balasan…
               </p>
             </div>
           </section>
-        ) : isReplying ? (
+        ) : isReplying || !lastReply ? (
           <section className="dialogue dialogue--reply" aria-label="Kolom balasan Sensei">
             <img className="dialogue__panel" src="/ui/dialogue-box.png" alt="" />
             <div className="dialogue__content">
@@ -522,19 +467,21 @@ export default function App() {
                       if (input.trim() && !loading) handleSendMessage(e);
                     }
                   }}
-                  placeholder="Tulis balasan untuk Shiroko di sini... (Enter untuk kirim)"
+                  placeholder="Tulis pesan untuk Shiroko di sini... (Enter untuk kirim)"
                   rows={2}
                   maxLength={400}
                   disabled={loading}
                 />
                 <div className="dialogue__reply-actions">
-                  <button
-                    type="button"
-                    className="dialogue__cancel-btn"
-                    onClick={() => setIsReplying(false)}
-                  >
-                    Batal
-                  </button>
+                  {lastReply && (
+                    <button
+                      type="button"
+                      className="dialogue__cancel-btn"
+                      onClick={() => setIsReplying(false)}
+                    >
+                      Batal
+                    </button>
+                  )}
                   <button
                     className="dialogue__send-btn"
                     type="submit"
@@ -548,7 +495,7 @@ export default function App() {
               </form>
             </div>
           </section>
-        ) : lastReply ? (
+        ) : (
           <Dialogue
             key={lastReply.id}
             message={lastReply}
@@ -558,7 +505,7 @@ export default function App() {
             paused={panel !== null}
             autoPlay={autoPlay}
           />
-        ) : null}
+        )}
       </div>
 
       {/* History Modal */}
@@ -690,7 +637,7 @@ export default function App() {
           <div className="menu__card">
             <h2 id="reset-title">Mulai Cerita Baru?</h2>
             <p style={{ color: "#4c667c", lineHeight: "1.5" }}>
-              Riwayat percakapan saat ini akan dibersihkan dan Shiroko akan menyapa dengan obrolan baru.
+              Riwayat percakapan saat ini akan dibersihkan dan memulai obrolan baru dari awal.
             </p>
             <div className="confirm-actions">
               <button type="button" onClick={() => setPanel(null)}>

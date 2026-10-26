@@ -38,10 +38,3 @@ test("each turn carries one style request without accumulating earlier copies", 
     );
   }
 });
-
-test("buildChatRequest with null message lets AI determine opening starter freely", () => {
-  const payload = buildChatRequest(null, []);
-  assert.ok(payload.message.startsWith(SHIROKO_PERSONA));
-  assert.ok(payload.message.includes("Sensei baru saja membuka obrolan"));
-  assert.equal(payload.history.length, 0);
-});
