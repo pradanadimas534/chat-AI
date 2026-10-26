@@ -64,12 +64,6 @@ function Icon({ name }) {
         <path d="M12 16v-4M12 8h.01" />
       </>
     ),
-    settings: (
-      <>
-        <circle cx="12" cy="12" r="3" />
-        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852.997 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
-      </>
-    ),
   };
   return (
     <svg
@@ -223,27 +217,29 @@ export default function App() {
               ?
             </button>
           </div>
-
-          <button
-            className={`settings-trigger ${panel ? "settings-trigger--active" : ""}`}
-            type="button"
-            onClick={() => setPanel((prev) => (prev ? null : "menu"))}
-            aria-label="Buka pengaturan"
-            title="Pengaturan"
-          >
-            <Icon name="settings" />
-          </button>
         </header>
 
         <div className="momotalk-body">
           <aside className="momotalk-rail" aria-label="Navigasi MomoTalk">
-            <div className="momotalk-rail__item" aria-hidden="true">
+            <button
+              type="button"
+              className={`momotalk-rail__item ${panel ? "momotalk-rail__item--active" : ""}`}
+              onClick={() => setPanel((prev) => (prev ? null : "menu"))}
+              aria-label="Buka menu pengaturan dan riwayat"
+              title="Pengaturan & Riwayat"
+            >
               <Icon name="userTab" />
-            </div>
-            <div className="momotalk-rail__item momotalk-rail__item--active" aria-hidden="true">
+            </button>
+            <button
+              type="button"
+              className={`momotalk-rail__item ${!panel ? "momotalk-rail__item--active" : ""}`}
+              onClick={() => setPanel(null)}
+              aria-label="Ruang chat"
+              title="Chat"
+            >
               <Icon name="chatTab" />
               <span className="momotalk-rail__badge">1</span>
-            </div>
+            </button>
           </aside>
 
           <aside className="momotalk-sidebar" aria-label="Daftar kontak">
