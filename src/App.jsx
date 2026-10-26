@@ -29,13 +29,19 @@ function Icon({ name }) {
         <path d="M12 7v5l3 2" />
       </>
     ),
-    next: <path d="m9 5 7 7-7 7" />,
-    eye: (
+    info: (
       <>
-        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-        <circle cx="12" cy="12" r="3" />
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 16v-4M12 8h.01" />
       </>
     ),
+    settings: (
+      <>
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852.997 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" />
+      </>
+    ),
+    next: <path d="m9 5 7 7-7 7" />,
   };
   return (
     <svg
@@ -54,27 +60,18 @@ function Icon({ name }) {
   );
 }
 
-function Dialogue({ message, onFinished, onReply, animated, paused, autoPlay }) {
+function Dialogue({ message, onFinished, onReply, animated }) {
   const pages = paginateDialogue(message.text, 120);
   const [page, setPage] = useState(0);
   const [visible, setVisible] = useState(0);
   const textRef = useRef(null);
-  const [atBottom, setAtBottom] = useState(true);
-
-  const checkScroll = () => {
-    const el = textRef.current;
-    if (el) setAtBottom(el.scrollHeight - el.clientHeight - el.scrollTop < 4);
-  };
 
   const content = pages[page] || { text: message.text, narration: false };
   const complete = !animated || visible >= content.text.length;
 
   useLayoutEffect(() => {
     if (textRef.current) textRef.current.scrollTop = 0;
-    checkScroll();
   }, [page]);
-
-  useLayoutEffect(checkScroll, [visible, animated, content.text]);
 
   useEffect(() => {
     setVisible(0);
@@ -101,28 +98,6 @@ function Dialogue({ message, onFinished, onReply, animated, paused, autoPlay }) 
       onFinished?.();
     }
   }, [complete, page, pages.length, onFinished]);
-
-  useEffect(() => {
-    if (!complete || !atBottom || paused) return;
-    if (!autoPlay && page >= pages.length - 1) return;
-    let timer;
-    const schedule = () => {
-      clearTimeout(timer);
-      if (document.hidden) return;
-      timer = setTimeout(() => {
-        if (page < pages.length - 1) {
-          setVisible(0);
-          setPage((current) => current + 1);
-        }
-      }, Math.max(2500, content.text.split(/\s+/).length * 280));
-    };
-    schedule();
-    document.addEventListener("visibilitychange", schedule);
-    return () => {
-      clearTimeout(timer);
-      document.removeEventListener("visibilitychange", schedule);
-    };
-  }, [complete, atBottom, paused, page, pages.length, content.text, autoPlay]);
 
   function advance(e) {
     if (e && e.stopPropagation) e.stopPropagation();
@@ -167,7 +142,6 @@ function Dialogue({ message, onFinished, onReply, animated, paused, autoPlay }) 
         <div className="dialogue__divider" aria-hidden="true" />
         <p
           ref={textRef}
-          onScroll={checkScroll}
           className={`dialogue__text ${content.narration ? "narration" : ""}`}
         >
           {complete ? content.text : content.text.slice(0, visible)}
@@ -207,16 +181,11 @@ export default function App() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [isReplying, setIsReplying] = useState(true);
-  const [dialogueDone, setDialogueDone] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [hideUI, setHideUI] = useState(false);
   const [error, setError] = useState(null);
   const [assetError, setAssetError] = useState(false);
   const [panel, setPanel] = useState(null);
-  const [autoPlay, setAutoPlay] = useState(false);
-  const [animated, setAnimated] = useState(
-    () => !window.matchMedia("(prefers-reduced-motion: reduce)").matches,
-  );
+  const animated = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   const requestRef = useRef(null);
   const inputRef = useRef(null);
@@ -264,7 +233,6 @@ export default function App() {
     setError(null);
     setLoading(true);
     setIsReplying(false);
-    setDialogueDone(false);
     setPanel(null);
     setInput("");
 
@@ -320,7 +288,6 @@ export default function App() {
       );
       setInput(textToSend);
       setMessages((prev) => prev.filter((m) => m.id !== id));
-      setDialogueDone(true);
       setIsReplying(true);
     } finally {
       clearTimeout(timer);
@@ -329,23 +296,10 @@ export default function App() {
     }
   }
 
-  function resetChat() {
-    if (requestRef.current) return;
-    setPanel(null);
-    setError(null);
-    setMessages([]);
-    setInput("");
-    setDialogueDone(false);
-    setIsReplying(true);
-  }
-
   return (
     <main
-      className={`scene novel-scene emotion-${emotion} time-${sceneTime} ${hideUI ? "scene--clean" : ""}`}
+      className={`scene novel-scene emotion-${emotion} time-${sceneTime}`}
       aria-label="Visual novel dialogue scene"
-      onClick={() => {
-        if (hideUI) setHideUI(false);
-      }}
     >
       {/* Background with real-time lighting */}
       <div className="scene__background room-background" aria-hidden="true" />
@@ -362,68 +316,24 @@ export default function App() {
         />
       </div>
 
-      {/* Top Scene Controls */}
-      <div
-        className="scene__controls"
-        role="toolbar"
-        aria-label="Kontrol adegan"
-      >
+      {/* Single Compact Settings Button at Top Right */}
+      <div className="scene__controls">
         <button
-          className={`scene__control ${isReplying ? "scene__control--active" : ""}`}
+          className={`settings-trigger ${panel ? "settings-trigger--active" : ""}`}
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            setIsReplying((prev) => (lastReply ? !prev : true));
+            setPanel((prev) => (prev ? null : "menu"));
           }}
+          aria-label="Buka pengaturan"
+          title="Pengaturan"
         >
-          <span>Balas</span>
-        </button>
-        <button
-          className={`scene__control ${hideUI ? "scene__control--active" : ""}`}
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            setHideUI((prev) => !prev);
-          }}
-          title={hideUI ? "Tampilkan UI" : "Sembunyikan UI"}
-        >
-          <span>UI</span>
-        </button>
-        <button
-          className={`scene__control ${autoPlay ? "scene__control--active" : ""}`}
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            setAutoPlay((prev) => !prev);
-          }}
-          aria-pressed={autoPlay}
-        >
-          <span>Auto</span>
-        </button>
-        <button
-          className="scene__control"
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            setPanel("history");
-          }}
-        >
-          <span>Riwayat</span>
-        </button>
-        <button
-          className="scene__control"
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            setPanel("menu");
-          }}
-        >
-          <span>Menu</span>
+          <Icon name="settings" />
         </button>
       </div>
 
-      {/* Interactive UI Container (Can be toggled/hidden) */}
-      <div className={`ui-interactive-layer ${hideUI ? "ui-hidden" : ""}`}>
+      {/* Interactive UI Container */}
+      <div className="ui-interactive-layer">
         {/* Error notification banner if request fails */}
         {error && !loading && (
           <div className="scene-error-toast" role="alert">
@@ -526,15 +436,55 @@ export default function App() {
             <Dialogue
               key={lastReply.id}
               message={lastReply}
-              onFinished={() => setDialogueDone(true)}
               onReply={() => setIsReplying(true)}
               animated={animated}
-              paused={panel !== null}
-              autoPlay={autoPlay}
             />
           )}
         </div>
       </div>
+
+      {/* Settings Menu Modal (Only Riwayat Chat & Tentang AI) */}
+      {panel === "menu" && (
+        <div
+          className="menu"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="menu-title"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setPanel(null);
+          }}
+        >
+          <div className="menu__card">
+            <div className="modal-title-row">
+              <h2 id="menu-title">Pengaturan</h2>
+              <button
+                className="menu-close-btn"
+                type="button"
+                onClick={() => setPanel(null)}
+                aria-label="Tutup pengaturan"
+              >
+                <Icon name="close" />
+              </button>
+            </div>
+            <button
+              type="button"
+              className="menu__item-btn"
+              onClick={() => setPanel("history")}
+            >
+              <Icon name="history" />
+              <span>Riwayat Chat</span>
+            </button>
+            <button
+              type="button"
+              className="menu__item-btn"
+              onClick={() => setPanel("about")}
+            >
+              <Icon name="info" />
+              <span>Tentang AI</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* History Modal */}
       {panel === "history" && (
@@ -549,7 +499,7 @@ export default function App() {
         >
           <div className="menu__card history__card">
             <div className="modal-title-row">
-              <h2 id="history-title">Riwayat Percakapan</h2>
+              <h2 id="history-title">Riwayat Chat</h2>
               <button
                 className="menu-close-btn"
                 type="button"
@@ -586,6 +536,9 @@ export default function App() {
               )}
             </div>
             <div className="modal-actions">
+              <button type="button" onClick={() => setPanel("menu")}>
+                Kembali
+              </button>
               <button type="button" className="resume-btn" onClick={() => setPanel(null)}>
                 Tutup
               </button>
@@ -594,105 +547,57 @@ export default function App() {
         </div>
       )}
 
-      {/* Menu Modal */}
-      {panel === "menu" && (
+      {/* About AI Modal */}
+      {panel === "about" && (
         <div
           className="menu"
           role="dialog"
           aria-modal="true"
-          aria-labelledby="menu-title"
+          aria-labelledby="about-title"
           onClick={(e) => {
             if (e.target === e.currentTarget) setPanel(null);
           }}
         >
-          <div className="menu__card">
+          <div className="menu__card about__card">
             <div className="modal-title-row">
-              <h2 id="menu-title">Pengaturan & Menu</h2>
+              <h2 id="about-title">Tentang AI</h2>
               <button
                 className="menu-close-btn"
                 type="button"
                 onClick={() => setPanel(null)}
-                aria-label="Tutup menu"
+                aria-label="Tutup info"
               >
                 <Icon name="close" />
               </button>
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                setPanel(null);
-                setIsReplying(true);
-              }}
-            >
-              Tulis Pesan ke Shiroko
-            </button>
-            <button
-              type="button"
-              onClick={() => setPanel("history")}
-            >
-              Riwayat Obrolan
-            </button>
-            <button
-              type="button"
-              onClick={() => setAnimated((prev) => !prev)}
-            >
-              Animasi Teks: {animated ? "Aktif" : "Nonaktif"}
-            </button>
-            <button
-              type="button"
-              className="danger-btn"
-              onClick={() => setPanel("reset")}
-            >
-              Mulai Cerita Baru
-            </button>
-            <button
-              type="button"
-              className="resume-btn"
-              onClick={() => setPanel(null)}
-            >
-              Kembali ke Ruangan
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Reset Confirmation Modal */}
-      {panel === "reset" && (
-        <div
-          className="menu"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="reset-title"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setPanel(null);
-          }}
-        >
-          <div className="menu__card">
-            <div className="modal-title-row">
-              <h2 id="reset-title">Mulai Cerita Baru?</h2>
-              <button
-                className="menu-close-btn"
-                type="button"
-                onClick={() => setPanel(null)}
-                aria-label="Tutup konfirmasi"
-              >
-                <Icon name="close" />
+            <dl className="about-list">
+              <div className="about-item">
+                <dt>Dibuat Oleh</dt>
+                <dd>Dimas Pradana (pradanadimas534)</dd>
+              </div>
+              <div className="about-item">
+                <dt>Repositori GitHub</dt>
+                <dd>
+                  <a
+                    href="https://github.com/pradanadimas534/chat-AI"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    github.com/pradanadimas534/chat-AI
+                  </a>
+                </dd>
+              </div>
+              <div className="about-item">
+                <dt>Model AI</dt>
+                <dd>Google Gemini (Karakter: Sunaookami Shiroko)</dd>
+              </div>
+            </dl>
+            <div className="modal-actions">
+              <button type="button" onClick={() => setPanel("menu")}>
+                Kembali
               </button>
-            </div>
-            <p className="modal-description">
-              Riwayat percakapan saat ini akan dibersihkan dan memulai obrolan baru dari awal.
-            </p>
-            <div className="confirm-actions">
-              <button type="button" onClick={() => setPanel(null)}>
-                Batal
-              </button>
-              <button
-                type="button"
-                className="danger-btn"
-                onClick={resetChat}
-                disabled={loading}
-              >
-                Mulai Ulang
+              <button type="button" className="resume-btn" onClick={() => setPanel(null)}>
+                Tutup
               </button>
             </div>
           </div>

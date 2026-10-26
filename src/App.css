@@ -193,7 +193,7 @@ button:disabled {
 }
 
 /* ==========================================================================
-   TOP SCENE CONTROLS (CUSTOM TACTICAL HUD PILLS)
+   TOP SCENE CONTROLS (COMPACT SETTINGS BUTTON)
    ========================================================================== */
 .scene__controls {
   display: flex;
@@ -202,23 +202,15 @@ button:disabled {
   top: max(16px, env(safe-area-inset-top));
   right: max(20px, env(safe-area-inset-right));
   z-index: 25;
-  gap: 8px;
 }
 
-.scene__control {
-  position: relative;
-  min-width: 78px;
-  min-height: 44px;
-  padding: 0 16px;
+.settings-trigger {
+  width: 44px;
+  height: 44px;
   background: var(--surface-hud);
   border: 1px solid var(--border-subtle);
-  border-radius: 4px;
-  transform: skewX(-10deg);
+  border-radius: 8px;
   color: var(--text-primary);
-  font-family: var(--font-sans);
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0.2px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -226,35 +218,21 @@ button:disabled {
   box-shadow: 0 6px 16px rgba(5, 14, 24, 0.35);
 }
 
-.scene__control > span {
-  transform: skewX(10deg);
-  display: inline-block;
-}
-
-.scene__control:hover {
-  background: var(--surface-elevated);
-  border-color: var(--accent-cyan);
-  transform: skewX(-10deg) translateY(-1px);
-}
-
-.scene__control:active {
-  transform: skewX(-10deg) translateY(0);
-}
-
-.scene__control--active {
+.settings-trigger:hover {
   background: var(--surface-elevated);
   border-color: var(--accent-cyan);
   color: var(--accent-cyan);
+  transform: translateY(-1px);
 }
 
-.scene__control--active::after {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 14%;
-  right: 14%;
-  height: 2px;
-  background: var(--accent-cyan);
+.settings-trigger:active {
+  transform: translateY(0);
+}
+
+.settings-trigger--active {
+  background: var(--surface-elevated);
+  border-color: var(--accent-cyan);
+  color: var(--accent-cyan);
 }
 
 /* ==========================================================================
@@ -651,6 +629,12 @@ button:disabled {
   border-color: var(--accent-cyan);
 }
 
+.menu__card .menu__item-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .menu__card .resume-btn {
   background: var(--accent-primary);
   border-color: var(--accent-cyan);
@@ -662,14 +646,50 @@ button:disabled {
   background: var(--accent-primary-hover);
 }
 
-.menu__card .danger-btn {
-  color: var(--danger-text);
-  border-color: var(--danger-border);
-  background: var(--danger-bg);
+/* ==========================================================================
+   ABOUT AI CARD
+   ========================================================================== */
+.about__card {
+  width: min(460px, 100%);
 }
 
-.menu__card .danger-btn:hover {
-  background: rgba(180, 40, 62, 0.35);
+.about-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 0;
+}
+
+.about-item {
+  background: var(--surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.about-item dt {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.about-item dd {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+.about-item a {
+  color: var(--accent-cyan);
+  text-decoration: none;
+}
+
+.about-item a:hover {
+  text-decoration: underline;
 }
 
 /* ==========================================================================
@@ -784,23 +804,8 @@ button:disabled {
   }
 
   .scene__controls {
-    top: max(10px, env(safe-area-inset-top));
-    right: max(10px, env(safe-area-inset-right));
-    left: max(10px, env(safe-area-inset-left));
-    justify-content: flex-end;
-    gap: 6px;
-  }
-
-  .scene__control {
-    min-width: 56px;
-    min-height: 44px;
-    padding: 0 11px;
-    font-size: 13px;
-    transform: skewX(-6deg);
-  }
-
-  .scene__control > span {
-    transform: skewX(6deg);
+    top: max(12px, env(safe-area-inset-top));
+    right: max(12px, env(safe-area-inset-right));
   }
 
   .dialogue-dock {
